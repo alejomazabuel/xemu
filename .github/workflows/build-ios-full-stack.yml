@@ -8,7 +8,12 @@ on:
       - "v*"
     paths:
       - "ios-app/**"
+      - "block/**"
+      - "hw/**"
+      - "include/net/**"
+      - "include/qemu/**"
       - "ui/**"
+      - "net/**"
       - "include/ui/**"
       - "meson.build"
       - "meson_options.txt"
