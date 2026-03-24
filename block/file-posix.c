@@ -47,6 +47,7 @@
 #include "scsi/utils.h"
 
 #if defined(__APPLE__) && (__MACH__)
+#include <TargetConditionals.h>
 #include <sys/ioctl.h>
 #if defined(HAVE_HOST_BLOCK_DEVICE)
 #include <paths.h>
@@ -1612,7 +1613,7 @@ static void raw_refresh_limits(BlockDriverState *bs, Error **errp)
         return;
     }
 
-#if defined(__APPLE__) && (__MACH__)
+#if defined(__APPLE__) && (__MACH__) && !(defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE)
     struct statfs buf;
 
     if (!fstatfs(s->fd, &buf)) {
