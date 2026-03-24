@@ -29,6 +29,7 @@
 #include <fpng.h>
 #include <math.h>
 #include <stdio.h>
+#include <unordered_map>
 #include <vector>
 
 #include "ui/shader/xemu-logo-frag.h"
@@ -48,6 +49,7 @@
 
 Fbo *controller_fbo, *xmu_fbo, *logo_fbo;
 GLuint g_controller_duke_tex, g_controller_s_tex, g_logo_tex, g_icon_tex, g_xmu_tex;
+static std::unordered_map<GLuint, std::pair<int, int>> g_texture_sizes;
 
 enum class ShaderType {
     Blit,
@@ -85,6 +87,42 @@ bool Fbo::blend;
 DecalShader *NewDecalShader(enum ShaderType type);
 void DeleteDecalShader(DecalShader *s);
 
+static void TrackTextureSize(GLuint tex, int width, int height)
+{
+    if (tex) {
+        g_texture_sizes[tex] = { width, height };
+    }
+}
+
+static void ForgetTextureSize(GLuint tex)
+{
+    if (tex) {
+        g_texture_sizes.erase(tex);
+    }
+}
+
+static bool GetTextureSize(GLuint tex, int *width, int *height)
+{
+    if (!tex || !width || !height) {
+        return false;
+    }
+
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+    auto it = g_texture_sizes.find(tex);
+    if (it == g_texture_sizes.end()) {
+        return false;
+    }
+    *width = it->second.first;
+    *height = it->second.second;
+    return true;
+#else
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, width);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, height);
+    return true;
+#endif
+}
+
 static GLint GetCurrentFbo()
 {
     GLint fbo;
@@ -107,6 +145,7 @@ Fbo::Fbo(int width, int height)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA,
                  GL_UNSIGNED_BYTE, NULL);
+    TrackTextureSize(tex, w, h);
 
     GLint original = GetCurrentFbo();
 
@@ -123,6 +162,7 @@ Fbo::Fbo(int width, int height)
 
 Fbo::~Fbo()
 {
+    ForgetTextureSize(tex);
     glDeleteTextures(1, &tex);
     glDeleteFramebuffers(1, &fbo);
 }
@@ -168,6 +208,7 @@ static GLuint InitTexture(unsigned char *data, int width, int height,
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    TrackTextureSize(tex, width, height);
     return tex;
 }
 
@@ -380,9 +421,11 @@ static void RenderDecal(DecalShader *s, float x, float y, float w, float h,
     tex_w = (int)tex_w;
     tex_h = (int)tex_h;
 
-    int tw_i, th_i;
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH,  &tw_i);
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &th_i);
+    GLint current_tex = 0;
+    int tw_i = tex_w > 0 ? (int)tex_w : 1;
+    int th_i = tex_h > 0 ? (int)tex_h : 1;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &current_tex);
+    GetTextureSize((GLuint)current_tex, &tw_i, &th_i);
     float tw = tw_i, th = th_i;
 
 #define COL(color, c) (float)(((color) >> ((c)*8)) & 0xff) / 255.0
@@ -960,8 +1003,10 @@ void RenderFramebuffer(GLint tex, int width, int height, bool flip)
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, tex);
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &tw);
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &th);
+    if (!GetTextureSize(tex, &tw, &th)) {
+        tw = width;
+        th = height;
+    }
 
     // Calculate scaling factors
     if (g_config.display.ui.fit == CONFIG_DISPLAY_UI_FIT_STRETCH) {
@@ -994,8 +1039,12 @@ bool RenderFramebufferToPng(GLuint tex, bool flip, std::vector<uint8_t> &png, in
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, tex);
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
+    if (!GetTextureSize(tex, &width, &height)) {
+        GLint viewport[4];
+        glGetIntegerv(GL_VIEWPORT, viewport);
+        width = viewport[2] > 0 ? viewport[2] : 640;
+        height = viewport[3] > 0 ? viewport[3] : 480;
+    }
 
     width = height * GetDisplayAspectRatio(width, height);
 

@@ -1221,13 +1221,8 @@ bool MainMenuSnapshotsView::BigSnapshotButton(QEMUSnapshotInfo *snapshot,
 
     // Snapshot thumbnail
     GLuint thumbnail = data->gl_thumbnail ? data->gl_thumbnail : g_icon_tex;
-    int thumbnail_width, thumbnail_height;
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, thumbnail);
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH,
-                             &thumbnail_width);
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT,
-                             &thumbnail_height);
+    int thumbnail_width = data->gl_thumbnail ? XEMU_SNAPSHOT_THUMBNAIL_WIDTH : 64;
+    int thumbnail_height = data->gl_thumbnail ? XEMU_SNAPSHOT_THUMBNAIL_HEIGHT : 64;
 
     // Draw black background behind thumbnail
     ImVec2 thumbnail_min(p0.x + thumbnail_pos.x, p0.y + thumbnail_pos.y);
