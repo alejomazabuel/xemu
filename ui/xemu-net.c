@@ -36,7 +36,12 @@
 #include "net/hub.h"
 #include "net/slirp.h"
 #include <libslirp.h>
-#if defined(_WIN32)
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#else
+#define TARGET_OS_IPHONE 0
+#endif
+#if defined(_WIN32) || !TARGET_OS_IPHONE
 #include <pcap/pcap.h>
 #endif
 #include "xemu-notifications.h"
@@ -66,6 +71,10 @@ void xemu_net_enable(void)
         qdict_put_str(qdict, "udp",       g_config.net.udp.remote_addr);
         qdict_put_str(qdict, "localaddr", g_config.net.udp.bind_addr);
     } else if (g_config.net.backend == CONFIG_NET_BACKEND_PCAP) {
+#if TARGET_OS_IPHONE
+        xemu_queue_error_message("Bridged adapters are not available on iOS.");
+        return;
+#else
 #if defined(_WIN32)
         if (pcap_load_library()) {
             return;
@@ -75,6 +84,7 @@ void xemu_net_enable(void)
         qdict_put_str(qdict, "id",        id);
         qdict_put_str(qdict, "type",      "pcap");
         qdict_put_str(qdict, "ifname",    g_config.net.pcap.netif);
+#endif
     } else {
         // Unsupported backend type
         return;

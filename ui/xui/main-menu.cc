@@ -849,6 +849,13 @@ void MainMenuAudioView::Draw()
 
 NetworkInterface::NetworkInterface(pcap_if_t *pcap_desc, char *_friendlyname)
 {
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+    (void)pcap_desc;
+    (void)_friendlyname;
+    m_pcap_name.clear();
+    m_description = "Bridged adapters are unavailable on iOS";
+    m_friendly_name = m_description;
+#else
     m_pcap_name = pcap_desc->name;
     m_description = pcap_desc->description ?: pcap_desc->name;
     if (_friendlyname) {
@@ -859,6 +866,7 @@ NetworkInterface::NetworkInterface(pcap_if_t *pcap_desc, char *_friendlyname)
     } else {
         m_friendly_name = m_description;
     }
+#endif
 }
 
 NetworkInterfaceManager::NetworkInterfaceManager()
@@ -869,6 +877,12 @@ NetworkInterfaceManager::NetworkInterfaceManager()
 
 void NetworkInterfaceManager::Refresh(void)
 {
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+    m_ifaces.clear();
+    m_current_iface = NULL;
+    m_failed_to_load_lib = true;
+    return;
+#else
     pcap_if_t *alldevs, *iter;
     char err[PCAP_ERRBUF_SIZE];
 
@@ -906,6 +920,7 @@ void NetworkInterfaceManager::Refresh(void)
     }
 
     pcap_freealldevs(alldevs);
+#endif
 }
 
 void NetworkInterfaceManager::Select(NetworkInterface &iface)
@@ -943,6 +958,18 @@ void MainMenuNetworkView::Draw()
 
     bool appearing = ImGui::IsWindowAppearing();
     if (enabled) ImGui::BeginDisabled();
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+    if (g_config.net.backend == CONFIG_NET_BACKEND_PCAP) {
+        g_config.net.backend = CONFIG_NET_BACKEND_NAT;
+    }
+    if (ChevronCombo(
+            "Attached to", &g_config.net.backend,
+            "NAT\0"
+            "UDP Tunnel\0",
+            "Controls what the virtual network controller interfaces with")) {
+        appearing = true;
+    }
+#else
     if (ChevronCombo(
             "Attached to", &g_config.net.backend,
             "NAT\0"
@@ -951,6 +978,7 @@ void MainMenuNetworkView::Draw()
             "Controls what the virtual network controller interfaces with")) {
         appearing = true;
     }
+#endif
     SectionTitle("Options");
     switch (g_config.net.backend) {
     case CONFIG_NET_BACKEND_PCAP:
@@ -969,6 +997,11 @@ void MainMenuNetworkView::Draw()
 
 void MainMenuNetworkView::DrawPcapOptions(bool appearing)
 {
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+    (void)appearing;
+    ImGui::TextUnformatted("Bridged adapters are unavailable on iOS builds.");
+    return;
+#else
     if (iface_mgr.get() == nullptr) {
         iface_mgr.reset(new NetworkInterfaceManager());
         iface_mgr->Refresh();
@@ -1023,6 +1056,7 @@ void MainMenuNetworkView::DrawPcapOptions(bool appearing)
         ImGui::PopFont();
         DrawComboChevron();
     }
+#endif
 }
 
 void MainMenuNetworkView::DrawNatOptions(bool appearing)

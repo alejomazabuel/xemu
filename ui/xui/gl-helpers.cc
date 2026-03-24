@@ -33,6 +33,19 @@
 
 #include "ui/shader/xemu-logo-frag.h"
 
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#else
+#define TARGET_OS_IPHONE 0
+#endif
+
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+#define XEMU_GL_BIND_FRAG_DATA_LOCATION(program, color, name) ((void)0)
+#else
+#define XEMU_GL_BIND_FRAG_DATA_LOCATION(program, color, name) \
+    glBindFragDataLocation((program), (color), (name))
+#endif
+
 Fbo *controller_fbo, *xmu_fbo, *logo_fbo;
 GLuint g_controller_duke_tex, g_controller_s_tex, g_logo_tex, g_icon_tex, g_xmu_tex;
 
@@ -291,7 +304,7 @@ void main() {
     s->prog = glCreateProgram();
     glAttachShader(s->prog, vert);
     glAttachShader(s->prog, frag);
-    glBindFragDataLocation(s->prog, 0, "out_Color");
+    XEMU_GL_BIND_FRAG_DATA_LOCATION(s->prog, 0, "out_Color");
     glLinkProgram(s->prog);
     glUseProgram(s->prog);
 

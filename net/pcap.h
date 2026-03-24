@@ -20,7 +20,18 @@
 #ifndef NET_PCAP_H
 #define NET_PCAP_H
 
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#else
+#define TARGET_OS_IPHONE 0
+#endif
+
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+typedef struct pcap_if pcap_if_t;
+#define PCAP_ERRBUF_SIZE 256
+#else
 #include <pcap/pcap.h>
+#endif
 
 #if defined(_WIN32)
 #include "net/capture_win_ifnames.h"
