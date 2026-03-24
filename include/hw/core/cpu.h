@@ -352,7 +352,6 @@ typedef union IcountDecr {
     } u16;
 } IcountDecr;
 
-#ifdef XBOX
 typedef void (*MemAccessCallbackFunc)(void *opaque, MemoryRegion *mr, hwaddr addr, hwaddr len, bool write);
 
 typedef struct MemAccessCallback {
@@ -363,7 +362,6 @@ typedef struct MemAccessCallback {
     void *opaque;
     QTAILQ_ENTRY(MemAccessCallback) entry;
 } MemAccessCallback;
-#endif
 
 /**
  * CPUNegativeOffsetState: Elements of CPUState most efficiently accessed
