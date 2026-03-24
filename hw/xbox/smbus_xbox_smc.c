@@ -27,6 +27,7 @@
 #include "qemu/option.h"
 #include "hw/hw.h"
 #include "hw/acpi/acpi.h"
+#include "hw/acpi/acpi_dev_interface.h"
 #include "hw/i2c/i2c.h"
 #include "hw/i2c/smbus_slave.h"
 #include "qemu/config-file.h"
