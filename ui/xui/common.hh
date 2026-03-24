@@ -19,7 +19,7 @@
 #pragma once
 
 #include <SDL.h>
-#include <epoxy/gl.h>
+#include "ui/xemu-gl.h"
 #include "ui/xemu-settings.h"
 
 #define IMGUI_DEFINE_MATH_OPERATORS

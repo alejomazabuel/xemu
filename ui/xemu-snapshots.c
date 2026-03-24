@@ -22,7 +22,6 @@
 #include "xemu-xbe.h"
 
 #include <SDL2/SDL.h>
-#include <epoxy/gl.h>
 
 #include "block/aio.h"
 #include "block/block_int.h"
@@ -37,6 +36,7 @@
 
 #include "ui/console.h"
 #include "ui/input.h"
+#include "ui/xemu-gl.h"
 
 static QEMUSnapshotInfo *xemu_snapshots_metadata = NULL;
 static XemuSnapshotData *xemu_snapshots_extra_data = NULL;

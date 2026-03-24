@@ -8,7 +8,7 @@
 #include "ui/qemu-pixman.h"
 
 #ifdef CONFIG_OPENGL
-# include <epoxy/gl.h>
+# include "ui/xemu-gl.h"
 # include "ui/shader.h"
 #endif
 

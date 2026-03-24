@@ -1,7 +1,7 @@
 #ifndef QEMU_SHADER_H
 #define QEMU_SHADER_H
 
-#include <epoxy/gl.h>
+#include "ui/xemu-gl.h"
 
 typedef struct QemuGLShader QemuGLShader;
 

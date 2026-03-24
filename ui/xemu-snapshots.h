@@ -26,11 +26,7 @@ extern "C" {
 
 #include "qemu/osdep.h"
 #include "block/snapshot.h"
-#if defined(ANDROID) || defined(__ANDROID__)
-#include <GLES3/gl3.h>
-#else
-#include <epoxy/gl.h>
-#endif
+#include "ui/xemu-gl.h"
 
 #define XEMU_SNAPSHOT_DATA_MAGIC 0x78656d75 // 'xemu'
 #define XEMU_SNAPSHOT_DATA_VERSION 1

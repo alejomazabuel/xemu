@@ -18,7 +18,7 @@
 //
 
 #include <SDL.h>
-#include <epoxy/gl.h>
+#include "ui/xemu-gl.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
