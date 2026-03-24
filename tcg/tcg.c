@@ -1290,7 +1290,6 @@ void tcg_register_thread(void)
 }
 #else
 
-#ifdef XBOX
 void tcg_register_init_ctx(void)
 {
     /*
@@ -1302,7 +1301,6 @@ void tcg_register_init_ctx(void)
      */
     tcg_ctx = &tcg_init_ctx;
 }
-#endif
 
 void tcg_register_thread(void)
 {

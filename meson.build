@@ -4674,7 +4674,7 @@ foreach target : target_dirs
   if host_os == 'darwin' and target == 'i386-softmmu' and get_option('x1box_ios_embedded_core')
     ios_core = shared_library(
       'xemu-ios-core',
-      [],
+      files('system/main.c'),
       install: false,
       c_args: c_args,
       dependencies: arch_deps + [sdl],

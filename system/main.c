@@ -28,7 +28,13 @@
 #include "system/replay.h"
 #include "system/system.h"
 
-#ifndef XBOX
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#else
+#define TARGET_OS_IPHONE 0
+#endif
+
+#if !defined(XBOX) && !(defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE)
 #ifdef CONFIG_SDL
 /*
  * SDL insists on wrapping the main() function with its own implementation on
@@ -60,7 +66,7 @@ static void *qemu_default_main(void *opaque)
 int (*qemu_main)(void);
 
 
-#ifdef XBOX
+#if defined(XBOX) || (defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE)
 
 static int qemu_xemu_main(void)
 {
@@ -114,4 +120,4 @@ int main(int argc, char **argv)
     }
 }
 
-#endif /* XBOX */
+#endif /* XBOX || TARGET_OS_IPHONE */

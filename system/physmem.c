@@ -845,8 +845,6 @@ AddressSpace *cpu_get_address_space(CPUState *cpu, int asidx)
     return cpu->cpu_ases[asidx].as;
 }
 
-#ifdef XBOX
-
 static inline bool access_callback_address_matches(MemAccessCallback *cb,
                                                    hwaddr addr, hwaddr len)
 {
@@ -945,8 +943,6 @@ void mem_check_access_callback_ramaddr(CPUState *cpu,
         }
     }
 }
-
-#endif // ifdef XBOX
 
 /* Called from RCU critical section */
 static RAMBlock *qemu_get_ram_block(ram_addr_t addr)

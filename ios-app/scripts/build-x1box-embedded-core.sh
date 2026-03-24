@@ -183,9 +183,13 @@ for pattern, replacement in (
     (r"-Wl,-framework,OpenGL(?!ES)\b", "-Wl,-framework,OpenGLES"),
     (r"(?<= )-ldl(?= )", ""),
     (r"(?<= )-lutil(?= )", ""),
+    (r"(?<= )-framework IOKit(?= )", ""),
     (r"OpenGLESES\b", "OpenGLES"),
 ):
     updated = re.sub(pattern, replacement, updated)
+
+if "libslirp.a" in updated and " -lresolv " not in updated:
+    updated = updated.replace("libslirp.a ", "libslirp.a -lresolv ", 1)
 
 updated = re.sub(r" {2,}", " ", updated)
 

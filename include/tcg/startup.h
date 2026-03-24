@@ -25,9 +25,7 @@
 #ifndef TCG_STARTUP_H
 #define TCG_STARTUP_H
 
-#ifdef XBOX
 void tcg_register_init_ctx(void);
-#endif
 
 /**
  * tcg_init: Initialize the TCG runtime
