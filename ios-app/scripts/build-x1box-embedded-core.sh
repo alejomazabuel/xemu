@@ -160,6 +160,36 @@ configure_cpu() {
   esac
 }
 
+sanitize_ios_link_args() {
+  local build_dir="$1"
+  local build_ninja="${build_dir}/build.ninja"
+
+  if [[ ! -f "${build_ninja}" ]]; then
+    echo "Missing build.ninja to sanitize: ${build_ninja}" >&2
+    exit 1
+  fi
+
+  python3 - "${build_ninja}" <<'PY'
+import pathlib
+import sys
+
+path = pathlib.Path(sys.argv[1])
+original = path.read_text()
+updated = original
+
+for old, new in (
+    ("-framework OpenGL", "-framework OpenGLES"),
+    ("-Wl,-framework,OpenGL", "-Wl,-framework,OpenGLES"),
+    (" -ldl ", " "),
+    (" -lutil ", " "),
+):
+    updated = updated.replace(old, new)
+
+if updated != original:
+    path.write_text(updated)
+PY
+}
+
 configure_and_build() {
   local sdk="$1"
   local build_dir="$2"
@@ -265,6 +295,8 @@ configure_and_build() {
     --extra-ldflags="${ldflags}" \
     -Dx1box_ios_embedded_core=true \
     >"${LOG_DIR}/${sdk}-configure.log" 2>&1
+
+  sanitize_ios_link_args "${build_dir}"
 
   ninja x1box-ios-embedded-core >"${LOG_DIR}/${sdk}-build.log" 2>&1
 
