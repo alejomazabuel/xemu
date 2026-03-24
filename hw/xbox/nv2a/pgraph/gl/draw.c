@@ -231,7 +231,7 @@ void pgraph_gl_draw_begin(NV2AState *d)
         glDisable(GL_DEPTH_TEST);
     }
 
-#ifndef __ANDROID__
+#if XEMU_GL_HAS_DEPTH_CLAMP
     glEnable(GL_DEPTH_CLAMP);
 #endif
 
@@ -299,17 +299,25 @@ void pgraph_gl_draw_begin(NV2AState *d)
 #else
     if (!anti_aliasing && pgraph_reg_r(pg, NV_PGRAPH_SETUPRASTER) &
                               NV_PGRAPH_SETUPRASTER_LINESMOOTHENABLE) {
-        glEnable(GL_LINE_SMOOTH);
+        if (XEMU_GL_HAS_LINE_SMOOTH) {
+            glEnable(GL_LINE_SMOOTH);
+        }
         glLineWidth(MIN(r->supported_smooth_line_width_range[1], pg->surface_scale_factor));
     } else {
-        glDisable(GL_LINE_SMOOTH);
+        if (XEMU_GL_HAS_LINE_SMOOTH) {
+            glDisable(GL_LINE_SMOOTH);
+        }
         glLineWidth(MIN(r->supported_aliased_line_width_range[1], pg->surface_scale_factor));
     }
     if (!anti_aliasing && pgraph_reg_r(pg, NV_PGRAPH_SETUPRASTER) &
                               NV_PGRAPH_SETUPRASTER_POLYSMOOTHENABLE) {
-        glEnable(GL_POLYGON_SMOOTH);
+        if (XEMU_GL_HAS_POLYGON_SMOOTH) {
+            glEnable(GL_POLYGON_SMOOTH);
+        }
     } else {
-        glDisable(GL_POLYGON_SMOOTH);
+        if (XEMU_GL_HAS_POLYGON_SMOOTH) {
+            glDisable(GL_POLYGON_SMOOTH);
+        }
     }
 #endif
 

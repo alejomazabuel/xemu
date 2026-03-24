@@ -214,15 +214,28 @@ static void generate_shaders(PGRAPHGLState *r, ShaderBinding *binding)
 
     ShaderState *state = &binding->state;
     ShaderModuleCacheKey key;
-#ifdef __ANDROID__
+#if defined(__ANDROID__)
     const bool gles = true;
     const int gles_version = 320;
+#elif defined(__APPLE__) && defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+    const bool gles = true;
+    const int gles_version = 300;
 #else
     const bool gles = false;
     const int gles_version = 0;
 #endif
 
-    bool need_geometry_shader = pgraph_glsl_need_geom(&state->geom);
+    bool requested_geometry_shader = pgraph_glsl_need_geom(&state->geom);
+    bool need_geometry_shader =
+        requested_geometry_shader && XEMU_GL_HAS_GEOMETRY_SHADER;
+    static bool warned_no_geometry_shader = false;
+    if (requested_geometry_shader && !need_geometry_shader &&
+        !warned_no_geometry_shader) {
+        fprintf(stderr,
+                "nv2a: geometry shaders unavailable on this GL backend; "
+                "falling back to direct vertex/fragment pipeline\n");
+        warned_no_geometry_shader = true;
+    }
     if (need_geometry_shader) {
         memset(&key, 0, sizeof(key));
         key.kind = GL_GEOMETRY_SHADER;

@@ -445,8 +445,6 @@ int qemu_unlink(const char *name)
 #endif
 }
 
-#ifdef XBOX
-
 /*
  * Create a directory on the filesystem
  *
@@ -473,8 +471,6 @@ int qemu_mkdir(const char *path)
 	return mkdir(path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 #endif
 }
-
-#endif
 
 /*
  * A variant of write(2) which handles partial write.

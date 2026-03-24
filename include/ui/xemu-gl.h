@@ -11,8 +11,24 @@
 #if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
 #include <OpenGLES/ES3/gl.h>
 #include <OpenGLES/ES3/glext.h>
+#define XEMU_GL_HAS_DEPTH_CLAMP 0
+#define XEMU_GL_HAS_LINE_SMOOTH 0
+#define XEMU_GL_HAS_POLYGON_SMOOTH 0
+#define XEMU_GL_HAS_GEOMETRY_SHADER 0
 #ifndef GL_UNPACK_ROW_LENGTH_EXT
 #define GL_UNPACK_ROW_LENGTH_EXT GL_UNPACK_ROW_LENGTH
+#endif
+#ifndef GL_DEPTH_CLAMP
+#define GL_DEPTH_CLAMP 0x864F
+#endif
+#ifndef GL_LINE_SMOOTH
+#define GL_LINE_SMOOTH 0x0B20
+#endif
+#ifndef GL_POLYGON_SMOOTH
+#define GL_POLYGON_SMOOTH 0x0B41
+#endif
+#ifndef GL_GEOMETRY_SHADER
+#define GL_GEOMETRY_SHADER 0x8DD9
 #endif
 #ifndef GL_CLAMP_TO_BORDER
 #define GL_CLAMP_TO_BORDER GL_CLAMP_TO_EDGE
@@ -164,6 +180,10 @@ static inline bool epoxy_has_gl_extension(const char *ext)
     return false;
 }
 #else
+#define XEMU_GL_HAS_DEPTH_CLAMP 1
+#define XEMU_GL_HAS_LINE_SMOOTH 1
+#define XEMU_GL_HAS_POLYGON_SMOOTH 1
+#define XEMU_GL_HAS_GEOMETRY_SHADER 1
 #include <epoxy/gl.h>
 #endif
 
