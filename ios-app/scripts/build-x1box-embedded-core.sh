@@ -171,19 +171,23 @@ sanitize_ios_link_args() {
 
   python3 - "${build_ninja}" <<'PY'
 import pathlib
+import re
 import sys
 
 path = pathlib.Path(sys.argv[1])
 original = path.read_text()
 updated = original
 
-for old, new in (
-    ("-framework OpenGL", "-framework OpenGLES"),
-    ("-Wl,-framework,OpenGL", "-Wl,-framework,OpenGLES"),
-    (" -ldl ", " "),
-    (" -lutil ", " "),
+for pattern, replacement in (
+    (r"-framework OpenGL(?!ES)\b", "-framework OpenGLES"),
+    (r"-Wl,-framework,OpenGL(?!ES)\b", "-Wl,-framework,OpenGLES"),
+    (r"(?<= )-ldl(?= )", ""),
+    (r"(?<= )-lutil(?= )", ""),
+    (r"OpenGLESES\b", "OpenGLES"),
 ):
-    updated = updated.replace(old, new)
+    updated = re.sub(pattern, replacement, updated)
+
+updated = re.sub(r" {2,}", " ", updated)
 
 if updated != original:
     path.write_text(updated)
