@@ -11,6 +11,7 @@ on:
       - "block/**"
       - "hw/**"
       - "include/block/**"
+      - "include/hw/**"
       - "include/net/**"
       - "include/qemu/**"
       - "ui/**"
