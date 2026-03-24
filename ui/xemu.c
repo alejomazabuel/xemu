@@ -155,12 +155,15 @@ const char *xemu_embedded_get_last_error(void)
 
 static void toggle_full_screen(struct sdl2_console *scon);
 
+#if defined(__ANDROID__) || TARGET_OS_IPHONE
+static uint64_t g_android_frame_counter = 0;
+#endif
+
 #ifdef __ANDROID__
 static bool g_android_gl_bgra_supported = true;
 static bool g_android_force_finish_before_swap = false;
 static bool g_android_paused = false;
 static bool g_android_should_quit = false;
-static uint64_t g_android_frame_counter = 0;
 static int g_android_target_fps = 60;
 static int64_t g_android_frame_interval_ns = 16666666;
 static int g_android_display_mode = 0; /* 0=stretch, 1=4:3, 2=16:9 */
@@ -2110,6 +2113,7 @@ bool xemu_embedded_is_active(void)
     return false;
 }
 #endif
+
 
 // vl.c
 

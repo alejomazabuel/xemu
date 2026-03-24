@@ -935,10 +935,8 @@ void qemu_init_subsystems(void)
     qemu_init_cpu_list();
     qemu_init_cpu_loop();
 
-#ifdef XBOX
     qemu_init_main_loop_lock();
     qemu_mutex_lock_main_loop();
-#endif
 
     bql_lock();
 

@@ -179,7 +179,6 @@ void qemu_notify_event(void)
 
 static GArray *gpollfds;
 
-#ifdef XBOX
 void qemu_init_main_loop_lock(void)
 {
     qemu_mutex_init(&qemu_main_loop_lock);
@@ -194,7 +193,6 @@ void qemu_mutex_unlock_main_loop(void)
 {
     qemu_mutex_unlock(&qemu_main_loop_lock);
 }
-#endif
 
 int qemu_init_main_loop(Error **errp)
 {

@@ -245,9 +245,7 @@ typedef enum {
 
 #define BDRV_O_CBW_DISCARD_SOURCE 0x80000 /* for copy-before-write filter */
 
-#ifdef XBOX
 #define BDRV_O_RO_WRITE_SHARE 0x100000 /* allow the file to open RO alongside an existing RW handle */
-#endif
 
 #define BDRV_O_CACHE_MASK  (BDRV_O_NOCACHE | BDRV_O_NO_FLUSH)
 
