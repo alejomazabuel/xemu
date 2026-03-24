@@ -162,19 +162,22 @@ configure_cpu() {
 
 sanitize_ios_link_args() {
   local build_dir="$1"
+  local sdkroot="$2"
   local build_ninja="${build_dir}/build.ninja"
+  local resolver_tbd="${sdkroot}/usr/lib/libresolv.9.tbd"
 
   if [[ ! -f "${build_ninja}" ]]; then
     echo "Missing build.ninja to sanitize: ${build_ninja}" >&2
     exit 1
   fi
 
-  python3 - "${build_ninja}" <<'PY'
+  python3 - "${build_ninja}" "${resolver_tbd}" <<'PY'
 import pathlib
 import re
 import sys
 
 path = pathlib.Path(sys.argv[1])
+resolver_tbd = pathlib.Path(sys.argv[2])
 original = path.read_text()
 updated = original
 
@@ -189,7 +192,11 @@ for pattern, replacement in (
     updated = re.sub(pattern, replacement, updated)
 
 if "libslirp.a" in updated and " -lresolv " not in updated:
-    updated = updated.replace("libslirp.a ", "libslirp.a -lresolv ", 1)
+    resolver_link = str(resolver_tbd) if resolver_tbd.exists() else "-lresolv"
+    updated = re.sub(r"libslirp\.a(?:\s+-lresolv)?\s+",
+                     f"libslirp.a {resolver_link} ",
+                     updated,
+                     count=1)
 
 updated = re.sub(r" {2,}", " ", updated)
 
@@ -304,7 +311,7 @@ configure_and_build() {
     -Dx1box_ios_embedded_core=true \
     >"${LOG_DIR}/${sdk}-configure.log" 2>&1
 
-  sanitize_ios_link_args "${build_dir}"
+  sanitize_ios_link_args "${build_dir}" "${sdkroot}"
 
   ninja x1box-ios-embedded-core >"${LOG_DIR}/${sdk}-build.log" 2>&1
 
