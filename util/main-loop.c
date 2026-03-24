@@ -50,13 +50,13 @@
  */
 GMainContext *qemu_main_context = NULL;
 GMainLoop *qemu_main_loop_obj = NULL;
+#endif
 
 /* *Another* main loop lock. Used for ensuring the main loop does not get a
  * chance to continue when some action is being handled on the UI interaction
  * thread that gives up the BQL but expects the main loop to not be running.
  */
 QemuMutex qemu_main_loop_lock;
-#endif
 
 #ifndef _WIN32
 #include <sys/wait.h>
