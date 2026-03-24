@@ -618,7 +618,7 @@ static bool render_surface_to(NV2AState *d, SurfaceBinding *surface,
 
     float color[] = { 0.0f, 0.0f, 0.0f, 0.0f };
     glBindTexture(GL_TEXTURE_2D, surface->gl_buffer);
-#ifdef __ANDROID__
+#if !XEMU_GL_HAS_TEXTURE_BORDER_COLOR
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 #else
@@ -643,7 +643,7 @@ static bool render_surface_to(NV2AState *d, SurfaceBinding *surface,
     glDisable(GL_STENCIL_TEST);
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
-#ifndef __ANDROID__ /* glPolygonMode not available in GLES 3.x core */
+#if !defined(__ANDROID__) && !(defined(__APPLE__) && defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE) /* glPolygonMode not available in GLES 3.x core */
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 #endif
     glClearColor(0.0f, 0.0f, 1.0f, 1.0f);

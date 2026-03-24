@@ -15,6 +15,7 @@
 #define XEMU_GL_HAS_LINE_SMOOTH 0
 #define XEMU_GL_HAS_POLYGON_SMOOTH 0
 #define XEMU_GL_HAS_GEOMETRY_SHADER 0
+#define XEMU_GL_HAS_TEXTURE_BORDER_COLOR 0
 #ifndef GL_UNPACK_ROW_LENGTH_EXT
 #define GL_UNPACK_ROW_LENGTH_EXT GL_UNPACK_ROW_LENGTH
 #endif
@@ -29,6 +30,9 @@
 #endif
 #ifndef GL_GEOMETRY_SHADER
 #define GL_GEOMETRY_SHADER 0x8DD9
+#endif
+#ifndef GL_TEXTURE_BORDER_COLOR
+#define GL_TEXTURE_BORDER_COLOR 0x1004
 #endif
 #ifndef GL_CLAMP_TO_BORDER
 #define GL_CLAMP_TO_BORDER GL_CLAMP_TO_EDGE
@@ -126,6 +130,12 @@ static inline void glProgramUniform1i(GLuint program, GLint location, GLint v0)
     glUseProgram(program);
     glUniform1i(location, v0);
 }
+static inline void glProgramUniform2f(GLuint program, GLint location,
+                                      GLfloat v0, GLfloat v1)
+{
+    glUseProgram(program);
+    glUniform2f(location, v0, v1);
+}
 #endif
 static inline void glClearDepth(GLfloat depth)
 {
@@ -184,6 +194,7 @@ static inline bool epoxy_has_gl_extension(const char *ext)
 #define XEMU_GL_HAS_LINE_SMOOTH 1
 #define XEMU_GL_HAS_POLYGON_SMOOTH 1
 #define XEMU_GL_HAS_GEOMETRY_SHADER 1
+#define XEMU_GL_HAS_TEXTURE_BORDER_COLOR 1
 #include <epoxy/gl.h>
 #endif
 

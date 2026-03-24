@@ -433,7 +433,7 @@ static void apply_texture_parameters(PGRAPHGLState *r,
     assert(addru < ARRAY_SIZE(pgraph_texture_addr_gl_map));
     if (addru != binding->addru) {
         GLenum wrap_s = pgraph_texture_addr_gl_map[addru];
-#ifdef __ANDROID__
+#if !XEMU_GL_HAS_TEXTURE_BORDER_COLOR
         if (wrap_s == GL_CLAMP_TO_BORDER) {
             wrap_s = GL_CLAMP_TO_EDGE;
         }
@@ -447,7 +447,7 @@ static void apply_texture_parameters(PGRAPHGLState *r,
         if (addrv != binding->addrv) {
             assert(addrv < ARRAY_SIZE(pgraph_texture_addr_gl_map));
             GLenum wrap_t = pgraph_texture_addr_gl_map[addrv];
-#ifdef __ANDROID__
+#if !XEMU_GL_HAS_TEXTURE_BORDER_COLOR
             if (wrap_t == GL_CLAMP_TO_BORDER) {
                 wrap_t = GL_CLAMP_TO_EDGE;
             }
@@ -462,7 +462,7 @@ static void apply_texture_parameters(PGRAPHGLState *r,
         if (addrp != binding->addrp) {
             assert(addrp < ARRAY_SIZE(pgraph_texture_addr_gl_map));
             GLenum wrap_r = pgraph_texture_addr_gl_map[addrp];
-#ifdef __ANDROID__
+#if !XEMU_GL_HAS_TEXTURE_BORDER_COLOR
             if (wrap_r == GL_CLAMP_TO_BORDER) {
                 wrap_r = GL_CLAMP_TO_EDGE;
             }
@@ -485,7 +485,7 @@ static void apply_texture_parameters(PGRAPHGLState *r,
                         clamped_anisotropy);
     }
 
-#ifdef __ANDROID__
+#if !XEMU_GL_HAS_TEXTURE_BORDER_COLOR
     needs_border_color = false;
 #endif
     if (!is_bordered && needs_border_color) {

@@ -1181,7 +1181,6 @@ static inline bool cpu_breakpoint_test(CPUState *cpu, vaddr pc, int mask)
     return false;
 }
 
-#ifdef XBOX
 /**
  * Access callbacks to facilitate lazy syncronization, specifically when
  * emulating GPUs in an UMA system (e.g. Xbox).
@@ -1201,7 +1200,6 @@ void mem_check_access_callback_ramaddr(CPUState *cpu,
                                        hwaddr ram_addr, vaddr len, int flags);
 void mem_check_access_callback_vaddr(CPUState *cpu, vaddr addr, vaddr len,
                                      int flags, void *iotlbentry);
-#endif
 
 /**
  * cpu_get_address_space:
