@@ -22,7 +22,7 @@ run_step() {
   echo
   echo "==> ${name}"
   set -o pipefail
-  "$@" | tee "${BUILD_ROOT}/logs/${name}.log"
+  "$@" 2>&1 | tee "${BUILD_ROOT}/logs/${name}.log"
 }
 
 find_simulator_app() {
@@ -33,19 +33,65 @@ find_simulator_app() {
 
 smoke_launch_simulator() {
   local app_path="$1"
+  local simulator_udid
 
   if [[ -z "${app_path}" ]] || [[ ! -d "${app_path}" ]]; then
     echo "Simulator app bundle not found for smoke launch." >&2
     return 1
   fi
 
-  if ! xcrun simctl list devices | grep -q "(Booted)"; then
-    echo "No booted simulator was available after the test run." >&2
+  simulator_udid="$(python3 - "${SIM_DESTINATION}" <<'PY'
+import json
+import subprocess
+import sys
+
+destination = sys.argv[1]
+desired_name = ""
+desired_os = ""
+
+for part in destination.split(","):
+    if "=" not in part:
+        continue
+    key, value = part.split("=", 1)
+    key = key.strip()
+    value = value.strip()
+    if key == "name":
+        desired_name = value
+    elif key == "OS":
+        desired_os = value
+
+data = json.loads(subprocess.check_output(
+    ["xcrun", "simctl", "list", "devices", "available", "-j"],
+    text=True,
+))
+
+matches = []
+for runtime, devices in data.get("devices", {}).items():
+    runtime_os = runtime.split(".SimRuntime.iOS-")[-1].replace("-", ".")
+    for device in devices:
+        if desired_name and device.get("name") != desired_name:
+            continue
+        if desired_os and desired_os != "latest" and runtime_os != desired_os:
+            continue
+        matches.append((device.get("state") == "Booted", runtime_os, device.get("udid", "")))
+
+if not matches:
+    sys.exit(1)
+
+matches.sort(reverse=True)
+print(matches[0][2])
+PY
+)"
+
+  if [[ -z "${simulator_udid}" ]]; then
+    echo "Failed to resolve a simulator UDID for ${SIM_DESTINATION}." >&2
     return 1
   fi
 
-  xcrun simctl install booted "${app_path}"
-  xcrun simctl launch booted "${APP_BUNDLE_ID}"
+  xcrun simctl boot "${simulator_udid}" >/dev/null 2>&1 || true
+  xcrun simctl bootstatus "${simulator_udid}" -b
+  xcrun simctl install "${simulator_udid}" "${app_path}"
+  xcrun simctl launch "${simulator_udid}" "${APP_BUNDLE_ID}"
 }
 
 package_unsigned_ipa() {
