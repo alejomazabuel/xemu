@@ -173,6 +173,9 @@ jobs:
             echo "- Simulator arch: \`${{ inputs.simulator_arch || 'auto' }}\`"
             echo "- Simulator destination: \`${{ inputs.sim_destination || 'platform=iOS Simulator,name=iPhone 16,OS=latest' }}\`"
             echo "- Device build enabled: \`${{ inputs.run_device_build == false && 'false' || 'true' }}\`"
+            echo "- Simulator smoke launch: included"
+            echo "- Device archive output: \`build/ios-ci/packages/X1BoxiOS.xcarchive\`"
+            echo "- Unsigned IPA output: \`build/ios-ci/packages/X1BoxiOS-unsigned.ipa\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload iOS CI artifact
@@ -182,6 +185,7 @@ jobs:
           name: x1box-ios-ci
           path: |
             build/ios-ci/logs
+            build/ios-ci/packages
             build/ios-ci/results
           if-no-files-found: warn
           compression-level: 0
