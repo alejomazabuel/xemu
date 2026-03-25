@@ -34,6 +34,25 @@ Expected output paths inside the artifact:
 - `build/ios-ci/signed/export/X1BoxiOS.ipa`
 - `build/ios-ci/signed/X1BoxiOS-signed.xcarchive`
 
+## Running the signed export from this workspace
+
+If your fork already has the Apple secrets configured, you can dispatch the signed workflow from this repo root:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\ios-app\scripts\fork-workflow-bridge.ps1" `
+  -Mode Full `
+  -Repo "alejomazabuel/xemu" `
+  -Ref "codex/ios-reactive-workflow" `
+  -Workflow "build-ios-full-stack.yml" `
+  -ArtifactName "x1box-ios-ci" `
+  -SignIpa $true `
+  -ExportMethod development
+```
+
+If signing succeeds, the bridge will also download:
+
+- `x1box-ios-signed-ipa`
+
 ## Installing on a real device
 
 You can install the signed IPA using any workflow you already trust for your own devices, for example:

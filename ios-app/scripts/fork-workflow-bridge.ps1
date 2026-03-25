@@ -8,6 +8,9 @@ param(
   [string]$Ref = "master",
   [string]$SimDestination = "platform=iOS Simulator,name=iPhone 16,OS=latest",
   [bool]$RunDeviceBuild = $true,
+  [bool]$SignIpa = $false,
+  [ValidateSet("development", "ad-hoc")]
+  [string]$ExportMethod = "development",
   [string]$MinIosVersion = "17.0",
   [ValidateSet("auto", "arm64", "x86_64")]
   [string]$SimulatorArch = "auto",
@@ -135,6 +138,8 @@ function Start-WorkflowRun {
     [string]$BranchRef,
     [string]$SimulatorDestination,
     [bool]$ShouldRunDeviceBuild,
+    [bool]$ShouldSignIpa,
+    [string]$SigningExportMethod,
     [string]$MinimumIosVersion,
     [string]$SimulatorArchitecture,
     [Nullable[int64]]$DependencyRunId,
@@ -154,10 +159,20 @@ function Start-WorkflowRun {
       $inputs.sim_destination = $SimulatorDestination
       $inputs.run_device_build = if ($ShouldRunDeviceBuild) { "true" } else { "false" }
       $inputs.artifact_name = $ArtifactLabel
+      $inputs.sign_ipa = if ($ShouldSignIpa) { "true" } else { "false" }
+      $inputs.export_method = $SigningExportMethod
       if ($EmbeddedCoreWorkflowRunId) {
         $inputs.embedded_core_run_id = [string]$EmbeddedCoreWorkflowRunId
         $inputs.embedded_core_artifact_name = $EmbeddedCoreArtifactLabel
       }
+    }
+    "build-ios-full-stack.yml" {
+      $inputs.sim_destination = $SimulatorDestination
+      $inputs.run_device_build = if ($ShouldRunDeviceBuild) { "true" } else { "false" }
+      $inputs.min_ios_version = $MinimumIosVersion
+      $inputs.simulator_arch = $SimulatorArchitecture
+      $inputs.sign_ipa = if ($ShouldSignIpa) { "true" } else { "false" }
+      $inputs.export_method = $SigningExportMethod
     }
     "build-ios-embedded-core.yml" {
       $inputs.min_ios_version = $MinimumIosVersion
@@ -362,7 +377,7 @@ function Save-WorkflowArtifacts {
   foreach ($artifact in $artifactResponse.artifacts) {
     $matchesExpectedName = -not $ExpectedArtifactName -or $artifact.name -eq $ExpectedArtifactName
     $matchesFollowUpArtifact = $artifact.name -like "x1box-ios-followup-*"
-    $matchesKnownIosArtifact = $artifact.name -in @("x1box-ios-deps", "x1box-ios-embedded-core", "x1box-ios-ci")
+    $matchesKnownIosArtifact = $artifact.name -in @("x1box-ios-deps", "x1box-ios-embedded-core", "x1box-ios-ci", "x1box-ios-signed-ipa")
 
     if (-not ($matchesExpectedName -or $matchesFollowUpArtifact -or $matchesKnownIosArtifact)) {
       continue
@@ -397,6 +412,8 @@ if ($Mode -eq "dispatch" -or $Mode -eq "full") {
     -BranchRef $Ref `
     -SimulatorDestination $SimDestination `
     -ShouldRunDeviceBuild $RunDeviceBuild `
+    -ShouldSignIpa $SignIpa `
+    -SigningExportMethod $ExportMethod `
     -MinimumIosVersion $MinIosVersion `
     -SimulatorArchitecture $SimulatorArch `
     -DependencyRunId $DepsRunId `
