@@ -7,8 +7,8 @@ param(
   [string]$Workflow = "build-ios-app.yml",
   [string]$Ref = "master",
   [string]$SimDestination = "platform=iOS Simulator,name=iPhone 16,OS=latest",
-  [bool]$RunDeviceBuild = $true,
-  [bool]$SignIpa = $false,
+  [object]$RunDeviceBuild = $true,
+  [object]$SignIpa = $false,
   [ValidateSet("development", "ad-hoc")]
   [string]$ExportMethod = "development",
   [string]$MinIosVersion = "17.0",
@@ -28,6 +28,35 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+
+function ConvertTo-BridgeBoolean {
+  param(
+    [Parameter(Mandatory = $true)]$Value,
+    [Parameter(Mandatory = $true)][string]$ParameterName
+  )
+
+  if ($Value -is [bool]) {
+    return [bool]$Value
+  }
+
+  if ($Value -is [int] -or $Value -is [long]) {
+    return [bool]$Value
+  }
+
+  $normalized = ([string]$Value).Trim().ToLowerInvariant()
+  switch ($normalized) {
+    "true" { return $true }
+    "false" { return $false }
+    "1" { return $true }
+    "0" { return $false }
+    default {
+      throw "Parameter '$ParameterName' only accepts true/false/1/0. Received: '$Value'"
+    }
+  }
+}
+
+$RunDeviceBuild = ConvertTo-BridgeBoolean -Value $RunDeviceBuild -ParameterName "RunDeviceBuild"
+$SignIpa = ConvertTo-BridgeBoolean -Value $SignIpa -ParameterName "SignIpa"
 
 function Get-RepositoryParts {
   param([string]$Repository)
