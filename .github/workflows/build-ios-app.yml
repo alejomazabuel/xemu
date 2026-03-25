@@ -87,6 +87,9 @@ jobs:
       - name: Show available simulators
         run: xcrun simctl list devices available
 
+      - name: Prepare CI log directories
+        run: mkdir -p build/ios-ci/logs build/ios-ci/packages build/ios-ci/signed build/ios-ci/results
+
       - name: Resolve embedded core source
         id: embedded_core
         shell: bash
@@ -130,6 +133,7 @@ jobs:
 
       - name: Prepare Apple signing assets
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.sign_ipa }}
+        shell: bash
         id: signing
         env:
           APPLE_SIGNING_CERT_BASE64: ${{ secrets.APPLE_SIGNING_CERT_BASE64 }}
@@ -138,8 +142,22 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_BUNDLE_ID: com.alejomazabuel.x1boxios
         run: |
+          missing=()
+          [[ -n "${APPLE_SIGNING_CERT_BASE64}" ]] || missing+=("APPLE_SIGNING_CERT_BASE64")
+          [[ -n "${APPLE_SIGNING_CERT_PASSWORD}" ]] || missing+=("APPLE_SIGNING_CERT_PASSWORD")
+          [[ -n "${APPLE_MOBILEPROVISION_BASE64}" ]] || missing+=("APPLE_MOBILEPROVISION_BASE64")
+          [[ -n "${APPLE_TEAM_ID}" ]] || missing+=("APPLE_TEAM_ID")
+
+          if [[ ${#missing[@]} -gt 0 ]]; then
+            {
+              echo "Apple signing secrets are missing in this fork."
+              echo "Missing: ${missing[*]}"
+            } | tee build/ios-ci/logs/setup-apple-signing.log
+            exit 1
+          fi
+
           bash ios-app/scripts/setup-apple-signing.sh \
-            "${RUNNER_TEMP}/x1box-apple-signing.env"
+            "${RUNNER_TEMP}/x1box-apple-signing.env" 2>&1 | tee build/ios-ci/logs/setup-apple-signing.log
 
       - name: Build and test iOS app
         env:

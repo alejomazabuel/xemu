@@ -53,6 +53,8 @@ If signing succeeds, the bridge will also download:
 
 - `x1box-ios-signed-ipa`
 
+If the run fails in `Prepare Apple signing assets`, inspect `build/ios-ci/logs/setup-apple-signing.log` in the workflow artifact. That means the fork is still missing one or more Apple secrets.
+
 ## Installing on a real device
 
 You can install the signed IPA using any workflow you already trust for your own devices, for example:
