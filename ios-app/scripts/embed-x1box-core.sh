@@ -41,8 +41,13 @@ resolve_xcframework_source() {
   esac
 
   for slice in "${slice_candidates[@]}"; do
+    local slice_root="${SOURCE_XCFRAMEWORK}/${slice}"
     local framework_candidate="${SOURCE_XCFRAMEWORK}/${slice}/${FRAMEWORK_NAME}"
     local dylib_candidate="${SOURCE_XCFRAMEWORK}/${slice}/libxemu-ios-core.dylib"
+    local named_dylib_candidates=(
+      "${SOURCE_XCFRAMEWORK}/${slice}/libxemu-ios-core-device.dylib"
+      "${SOURCE_XCFRAMEWORK}/${slice}/libxemu-ios-core-simulator.dylib"
+    )
     if [[ -d "${framework_candidate}" ]]; then
       printf '%s\n' "${framework_candidate}"
       return 0
@@ -50,6 +55,21 @@ resolve_xcframework_source() {
     if [[ -f "${dylib_candidate}" ]]; then
       printf '%s\n' "${dylib_candidate}"
       return 0
+    fi
+    for named_candidate in "${named_dylib_candidates[@]}"; do
+      if [[ -f "${named_candidate}" ]]; then
+        printf '%s\n' "${named_candidate}"
+        return 0
+      fi
+    done
+
+    if [[ -d "${slice_root}" ]]; then
+      local first_dylib
+      first_dylib="$(find "${slice_root}" -maxdepth 1 -type f -name '*.dylib' | head -n 1)"
+      if [[ -n "${first_dylib}" ]]; then
+        printf '%s\n' "${first_dylib}"
+        return 0
+      fi
     fi
   done
 
@@ -73,8 +93,8 @@ if [[ -d "${SOURCE_XCFRAMEWORK}" ]]; then
     exit 0
   fi
 
-  echo "Found ${XCFRAMEWORK_NAME}, but no matching slice was available for ${PLATFORM_NAME:-unknown}."
-  exit 1
+  echo "Found ${XCFRAMEWORK_NAME}, but no matching slice was available for ${PLATFORM_NAME:-unknown}; continuing without embedding."
+  exit 0
 fi
 
 if [[ -f "${SOURCE_DYLIB}" ]]; then

@@ -64,16 +64,22 @@ static T ResolveOptionalSymbol(const char *name)
       @"X1BoxEmbeddedCore.xcframework/ios-arm64-simulator/X1BoxEmbeddedCore.framework/X1BoxEmbeddedCore",
       @"X1BoxEmbeddedCore.xcframework/ios-x86_64-simulator/X1BoxEmbeddedCore.framework/X1BoxEmbeddedCore",
       @"X1BoxEmbeddedCore.xcframework/ios-arm64_x86_64-simulator/libxemu-ios-core.dylib",
+      @"X1BoxEmbeddedCore.xcframework/ios-arm64_x86_64-simulator/libxemu-ios-core-simulator.dylib",
       @"X1BoxEmbeddedCore.xcframework/ios-arm64-simulator/libxemu-ios-core.dylib",
+      @"X1BoxEmbeddedCore.xcframework/ios-arm64-simulator/libxemu-ios-core-simulator.dylib",
       @"X1BoxEmbeddedCore.xcframework/ios-x86_64-simulator/libxemu-ios-core.dylib",
+      @"X1BoxEmbeddedCore.xcframework/ios-x86_64-simulator/libxemu-ios-core-simulator.dylib",
       @"X1BoxEmbeddedCore.framework/X1BoxEmbeddedCore",
+      @"libxemu-ios-core-simulator.dylib",
       @"libxemu-ios-core.dylib"
     ];
 #else
     NSArray<NSString *> *relativeCandidates = @[
       @"X1BoxEmbeddedCore.xcframework/ios-arm64/X1BoxEmbeddedCore.framework/X1BoxEmbeddedCore",
       @"X1BoxEmbeddedCore.xcframework/ios-arm64/libxemu-ios-core.dylib",
+      @"X1BoxEmbeddedCore.xcframework/ios-arm64/libxemu-ios-core-device.dylib",
       @"X1BoxEmbeddedCore.framework/X1BoxEmbeddedCore",
+      @"libxemu-ios-core-device.dylib",
       @"libxemu-ios-core.dylib"
     ];
 #endif
