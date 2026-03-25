@@ -1,10 +1,11 @@
 import XCTest
 @testable import X1BoxiOS
+import X1BoxNativeCore
 
 @MainActor
 final class NativeBridgeTests: XCTestCase {
   func testBundledEmbeddedCoreCanBeResolved() throws {
-    let bridge = X1BoxNativeBridge.shared
+    let bridge = X1BoxNativeBridge.shared()
     bridge.refreshEmbeddedCoreAvailability()
 
     guard let resolvedPath = bridge.resolvedEmbeddedCorePath() else {
@@ -18,7 +19,7 @@ final class NativeBridgeTests: XCTestCase {
   }
 
   func testEmbeddedCoreStatusReportsDynamicImageLoad() throws {
-    let bridge = X1BoxNativeBridge.shared
+    let bridge = X1BoxNativeBridge.shared()
     bridge.refreshEmbeddedCoreAvailability()
 
     guard bridge.resolvedEmbeddedCorePath() != nil else {
