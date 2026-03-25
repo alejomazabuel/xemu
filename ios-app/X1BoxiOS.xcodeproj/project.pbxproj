@@ -39,6 +39,7 @@
     A1200000000000000000001E /* LibraryScannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1100000000000000000001D /* LibraryScannerTests.swift */; };
     A1200000000000000000001F /* XemuConfigWriterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1100000000000000000001E /* XemuConfigWriterTests.swift */; };
     A12000000000000000000020 /* SetupAssetStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11000000000000000000023 /* SetupAssetStoreTests.swift */; };
+    A12000000000000000000021 /* NativeBridgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11000000000000000000024 /* NativeBridgeTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -108,6 +109,7 @@
     A11000000000000000000021 /* X1BoxiOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = X1BoxiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
     A11000000000000000000022 /* X1BoxiOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = X1BoxiOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
     A11000000000000000000023 /* SetupAssetStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupAssetStoreTests.swift; sourceTree = "<group>"; };
+    A11000000000000000000024 /* NativeBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeBridgeTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -253,6 +255,7 @@
         A1100000000000000000001D /* LibraryScannerTests.swift */,
         A1100000000000000000001E /* XemuConfigWriterTests.swift */,
         A11000000000000000000023 /* SetupAssetStoreTests.swift */,
+        A11000000000000000000024 /* NativeBridgeTests.swift */,
       );
       path = X1BoxiOSTests;
       sourceTree = "<group>";
@@ -447,6 +450,7 @@
         A1200000000000000000001E /* LibraryScannerTests.swift in Sources */,
         A1200000000000000000001F /* XemuConfigWriterTests.swift in Sources */,
         A12000000000000000000020 /* SetupAssetStoreTests.swift in Sources */,
+        A12000000000000000000021 /* NativeBridgeTests.swift in Sources */,
       );
       runOnlyForDeploymentPostprocessing = 0;
     };

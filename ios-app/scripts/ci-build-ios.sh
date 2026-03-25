@@ -7,6 +7,12 @@ SIM_DESTINATION="${SIM_DESTINATION:-platform=iOS Simulator,name=iPhone 16,OS=lat
 BUILD_ROOT="${BUILD_ROOT:-build/ios-ci}"
 RUN_DEVICE_BUILD="${RUN_DEVICE_BUILD:-true}"
 APP_BUNDLE_ID="${APP_BUNDLE_ID:-com.alejomazabuel.x1boxios}"
+ENABLE_SIGNED_EXPORT="${ENABLE_SIGNED_EXPORT:-false}"
+APPLE_EXPORT_METHOD="${APPLE_EXPORT_METHOD:-development}"
+APPLE_TEAM_ID="${APPLE_TEAM_ID:-}"
+APPLE_PROFILE_NAME="${APPLE_PROFILE_NAME:-}"
+APPLE_KEYCHAIN_PATH="${APPLE_KEYCHAIN_PATH:-}"
+APPLE_SIGNED_BUNDLE_ID="${APPLE_SIGNED_BUNDLE_ID:-${APP_BUNDLE_ID}}"
 
 mkdir -p "${BUILD_ROOT}/logs" "${BUILD_ROOT}/results"
 
@@ -14,6 +20,7 @@ echo "Using project: ${PROJECT}"
 echo "Using scheme: ${SCHEME}"
 echo "Using simulator destination: ${SIM_DESTINATION}"
 echo "Run generic iOS device build: ${RUN_DEVICE_BUILD}"
+echo "Signed IPA export enabled: ${ENABLE_SIGNED_EXPORT}"
 
 run_step() {
   local name="$1"
@@ -117,6 +124,42 @@ package_unsigned_ipa() {
   echo "Created unsigned IPA at ${ipa_path}"
 }
 
+archive_signed_ipa() {
+  local signed_archive_path="$1"
+  local signed_export_path="$2"
+  local export_options_path="${BUILD_ROOT}/packages/ExportOptions.plist"
+
+  if [[ -z "${APPLE_TEAM_ID}" || -z "${APPLE_PROFILE_NAME}" ]]; then
+    echo "APPLE_TEAM_ID and APPLE_PROFILE_NAME are required for signed IPA export." >&2
+    return 1
+  fi
+
+  bash "ios-app/scripts/write-export-options-plist.sh" \
+    "${export_options_path}" \
+    "${APPLE_EXPORT_METHOD}" \
+    "${APPLE_TEAM_ID}" \
+    "${APPLE_SIGNED_BUNDLE_ID}" \
+    "${APPLE_PROFILE_NAME}"
+
+  xcodebuild \
+    -project "${PROJECT}" \
+    -scheme "${SCHEME}" \
+    -configuration Release \
+    -destination "generic/platform=iOS" \
+    -archivePath "${signed_archive_path}" \
+    DEVELOPMENT_TEAM="${APPLE_TEAM_ID}" \
+    PRODUCT_BUNDLE_IDENTIFIER="${APPLE_SIGNED_BUNDLE_ID}" \
+    CODE_SIGN_STYLE=Manual \
+    PROVISIONING_PROFILE_SPECIFIER="${APPLE_PROFILE_NAME}" \
+    archive
+
+  xcodebuild \
+    -exportArchive \
+    -archivePath "${signed_archive_path}" \
+    -exportOptionsPlist "${export_options_path}" \
+    -exportPath "${signed_export_path}"
+}
+
 run_step show-build-settings \
   xcodebuild \
     -project "${PROJECT}" \
@@ -178,4 +221,19 @@ if [[ "${RUN_DEVICE_BUILD}" == "true" ]]; then
   run_step package-unsigned-ipa \
     package_unsigned_ipa \
     "${DEVICE_ARCHIVE_PATH}"
+
+  if [[ "${ENABLE_SIGNED_EXPORT}" == "true" ]]; then
+    SIGNED_ARCHIVE_PATH="${BUILD_ROOT}/signed/X1BoxiOS-signed.xcarchive"
+    SIGNED_EXPORT_PATH="${BUILD_ROOT}/signed/export"
+    mkdir -p "${BUILD_ROOT}/signed"
+
+    if [[ -n "${APPLE_KEYCHAIN_PATH}" ]]; then
+      export OTHER_CODE_SIGN_FLAGS="--keychain ${APPLE_KEYCHAIN_PATH}"
+    fi
+
+    run_step archive-and-export-signed-ipa \
+      archive_signed_ipa \
+      "${SIGNED_ARCHIVE_PATH}" \
+      "${SIGNED_EXPORT_PATH}"
+  fi
 fi

@@ -16,6 +16,7 @@ This folder contains the iOS and iPadOS shell for **X1 BOX**, kept separate from
 - config writer that mirrors the Android `xemu.toml` structure closely
 - touch overlay model and game controller presence monitoring
 - basic unit tests for settings persistence, library scanning, and config generation
+- native bridge tests that verify the bundled embedded core can actually be resolved in the iOS test environment
 - an embedded-core bootstrap path that will call official xemu entry points (`qemu_init` / `qemu_main`) when they are linked into the framework
 - an iOS-focused embedded host path that can boot and pump frames through exported helpers from `ui/xemu.c`
 
@@ -66,11 +67,17 @@ If you download the output of the embedded-core CI workflow, `ios-app/scripts/pr
 From this Windows workspace, the most reliable way to validate the iOS project is through GitHub Actions on macOS.
 
 - The repository now includes `.github/workflows/build-ios-app.yml`.
+- `Build iOS App` can now also export a signed IPA on `workflow_dispatch` when Apple signing secrets are configured.
 - The repository now includes `.github/workflows/build-ios-deps.yml` to build the `x1box-ios-deps` artifact on macOS.
 - The repository now includes `.github/workflows/build-ios-embedded-core.yml` for the macOS-side `libxemu-ios-core.dylib` / `X1BoxEmbeddedCore.xcframework` packaging path.
 - The repository also includes `.github/workflows/ios-workflow-followup.yml` for default-branch `workflow_run` follow-up, while feature branches publish the same summary/comment artifact inline from `build-ios-app.yml`.
 - That workflow builds the app for iOS Simulator, runs the `X1BoxiOSTests` suite, and also performs a generic iOS device build with signing disabled.
 - The helper script `ios-app/scripts/ci-build-ios.sh` is the single source of truth for those `xcodebuild` commands, so the same flow can be reused locally on macOS.
+- `ci-build-ios.sh` now also performs:
+  - simulator smoke launch
+  - device archive generation
+  - unsigned IPA packaging
+  - optional signed IPA export when Apple signing assets are installed in the runner
 - `build-ios-deps.yml` now generates the dependency bundle using overlay triplets in `ios-app/vcpkg-triplets/`.
 - `build-ios-embedded-core.yml` can now react to `Build iOS Dependencies` via `workflow_run`, download `x1box-ios-deps`, and produce `x1box-ios-embedded-core`.
 - `build-ios-app.yml` can now optionally download a prior `x1box-ios-embedded-core` artifact and stage it into `ios-app/EmbeddedCore/` before the Xcode build starts.
@@ -144,6 +151,15 @@ This project is meant to align with the upstream xemu Apple/SDL architecture fro
 - `system/*` bootstrap around `qemu_init` / `qemu_main`
 
 Once those sources or a static library exposing the same symbols are linked into `X1BoxNativeCore`, the iOS bridge will use the embedded boot path and drive rendering through `CADisplayLink`.
+
+## Signed IPA and sideload
+
+See [SIDELOAD.md](SIDELOAD.md) for:
+
+- required Apple repository secrets
+- signed IPA workflow usage
+- real-device sideload notes
+- a functional verification checklist for iPhone and iPad
 
 ## Project structure
 

@@ -581,6 +581,16 @@ static NSString *SummaryFromState(const SessionRuntimeState &state)
   [self syncController];
 }
 
+- (BOOL)isEmbeddedCoreLinked {
+  _state.embeddedCoreLinked = EmbeddedCoreIsLinked();
+  return _state.embeddedCoreLinked;
+}
+
+- (BOOL)isEmbeddedHostAPILinked {
+  _state.embeddedHostAPILinked = EmbeddedHostAPIIsLinked();
+  return _state.embeddedHostAPILinked;
+}
+
 - (NSString *)embeddedCoreStatusSummary {
   return EmbeddedCoreLoaderStatusString();
 }

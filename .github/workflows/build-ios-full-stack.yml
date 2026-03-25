@@ -48,6 +48,19 @@ on:
           - auto
           - arm64
           - x86_64
+      sign_ipa:
+        description: Export a signed IPA using Apple secrets
+        required: false
+        default: false
+        type: boolean
+      export_method:
+        description: Apple export method for signed IPA
+        required: false
+        default: development
+        type: choice
+        options:
+          - development
+          - ad-hoc
 
 permissions:
   contents: read
@@ -155,11 +168,30 @@ jobs:
             build/ios-embedded-core-download \
             ios-app/EmbeddedCore
 
+      - name: Prepare Apple signing assets
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.sign_ipa }}
+        id: signing
+        env:
+          APPLE_SIGNING_CERT_BASE64: ${{ secrets.APPLE_SIGNING_CERT_BASE64 }}
+          APPLE_SIGNING_CERT_PASSWORD: ${{ secrets.APPLE_SIGNING_CERT_PASSWORD }}
+          APPLE_MOBILEPROVISION_BASE64: ${{ secrets.APPLE_MOBILEPROVISION_BASE64 }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_BUNDLE_ID: com.alejomazabuel.x1boxios
+        run: |
+          bash ios-app/scripts/setup-apple-signing.sh \
+            "${RUNNER_TEMP}/x1box-apple-signing.env"
+
       - name: Build and test iOS app
         env:
           SIM_DESTINATION: ${{ inputs.sim_destination || 'platform=iOS Simulator,name=iPhone 16,OS=latest' }}
           BUILD_ROOT: build/ios-ci
           RUN_DEVICE_BUILD: ${{ github.event_name != 'workflow_dispatch' && 'true' || (inputs.run_device_build == false && 'false' || 'true') }}
+          ENABLE_SIGNED_EXPORT: ${{ github.event_name == 'workflow_dispatch' && inputs.sign_ipa && 'true' || 'false' }}
+          APPLE_EXPORT_METHOD: ${{ inputs.export_method || 'development' }}
+          APPLE_TEAM_ID: ${{ steps.signing.outputs.team_id }}
+          APPLE_PROFILE_NAME: ${{ steps.signing.outputs.profile_name }}
+          APPLE_KEYCHAIN_PATH: ${{ steps.signing.outputs.keychain_path }}
+          APPLE_SIGNED_BUNDLE_ID: ${{ steps.signing.outputs.bundle_id || 'com.alejomazabuel.x1boxios' }}
         run: bash ios-app/scripts/ci-build-ios.sh
 
       - name: Write job summary
@@ -173,9 +205,12 @@ jobs:
             echo "- Simulator arch: \`${{ inputs.simulator_arch || 'auto' }}\`"
             echo "- Simulator destination: \`${{ inputs.sim_destination || 'platform=iOS Simulator,name=iPhone 16,OS=latest' }}\`"
             echo "- Device build enabled: \`${{ github.event_name != 'workflow_dispatch' && 'true' || (inputs.run_device_build == false && 'false' || 'true') }}\`"
+            echo "- Signed IPA export enabled: \`${{ github.event_name == 'workflow_dispatch' && inputs.sign_ipa && 'true' || 'false' }}\`"
+            echo "- Signed export method: \`${{ inputs.export_method || 'development' }}\`"
             echo "- Simulator smoke launch: included"
             echo "- Device archive output: \`build/ios-ci/packages/X1BoxiOS.xcarchive\`"
             echo "- Unsigned IPA output: \`build/ios-ci/packages/X1BoxiOS-unsigned.ipa\`"
+            echo "- Signed IPA output: \`build/ios-ci/signed/export/X1BoxiOS.ipa\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload iOS CI artifact
@@ -186,6 +221,18 @@ jobs:
           path: |
             build/ios-ci/logs
             build/ios-ci/packages
+            build/ios-ci/signed
             build/ios-ci/results
+          if-no-files-found: warn
+          compression-level: 0
+
+      - name: Upload signed IPA artifact
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.sign_ipa }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v4
+        with:
+          name: x1box-ios-signed-ipa
+          path: |
+            build/ios-ci/signed/export
+            build/ios-ci/signed/X1BoxiOS-signed.xcarchive
           if-no-files-found: warn
           compression-level: 0

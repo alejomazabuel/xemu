@@ -11,6 +11,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)startSessionWithConfigPath:(NSString *)configPath error:(NSError * _Nullable * _Nullable)error;
 - (void)stopSession;
 - (void)refreshEmbeddedCoreAvailability;
+- (BOOL)isEmbeddedCoreLinked;
+- (BOOL)isEmbeddedHostAPILinked;
 - (NSString *)embeddedCoreStatusSummary;
 - (NSString * _Nullable)resolvedEmbeddedCorePath;
 - (BOOL)canUseNativeSnapshots;
