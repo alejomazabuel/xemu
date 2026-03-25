@@ -119,7 +119,7 @@ jobs:
         env:
           SIM_DESTINATION: ${{ inputs.sim_destination || 'platform=iOS Simulator,name=iPhone 16,OS=latest' }}
           BUILD_ROOT: build/ios-ci
-          RUN_DEVICE_BUILD: ${{ inputs.run_device_build == false && 'false' || 'true' }}
+          RUN_DEVICE_BUILD: ${{ github.event_name != 'workflow_dispatch' && 'true' || (inputs.run_device_build == false && 'false' || 'true') }}
         run: bash ios-app/scripts/ci-build-ios.sh
 
       - name: Write job summary
@@ -130,7 +130,7 @@ jobs:
             echo
             echo "- Trigger event: \`${{ github.event_name }}\`"
             echo "- Simulator destination: \`${{ inputs.sim_destination || 'platform=iOS Simulator,name=iPhone 16,OS=latest' }}\`"
-            echo "- Device build enabled: \`${{ inputs.run_device_build == false && 'false' || 'true' }}\`"
+            echo "- Device build enabled: \`${{ github.event_name != 'workflow_dispatch' && 'true' || (inputs.run_device_build == false && 'false' || 'true') }}\`"
             echo "- Artifact name: \`${{ inputs.artifact_name || 'x1box-ios-ci' }}\`"
             echo "- Embedded core source: \`${{ steps.embedded_core.outputs.source_label }}\`"
             echo "- Embedded core run id: \`${{ steps.embedded_core.outputs.run_id || 'none' }}\`"
