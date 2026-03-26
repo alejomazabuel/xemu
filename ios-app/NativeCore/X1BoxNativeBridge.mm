@@ -4,7 +4,10 @@
 #import <QuartzCore/QuartzCore.h>
 
 #include <TargetConditionals.h>
+#include <errno.h>
 #include <dlfcn.h>
+#include <sys/mman.h>
+#include <cstring>
 #include <map>
 #include <mutex>
 #include <sstream>
@@ -41,6 +44,42 @@ using DeleteSnapshotFn = bool (*)(const char *, bool, strList *, Error **);
 using ErrorGetPrettyFn = const char *(*)(const Error *);
 using ErrorFreeFn = void (*)(Error *);
 
+static bool CanAttemptDynamicEmbeddedCoreLoad(std::string *reason)
+{
+#if TARGET_OS_SIMULATOR
+  if (reason != nullptr) {
+    reason->clear();
+  }
+  return true;
+#else
+#ifdef MAP_JIT
+  constexpr size_t jitProbeSize = 0x4000;
+  errno = 0;
+  void *jitProbe = mmap(nullptr, jitProbeSize, PROT_READ | PROT_WRITE,
+                        MAP_PRIVATE | MAP_ANON | MAP_JIT, -1, 0);
+  if (jitProbe == MAP_FAILED) {
+    if (reason != nullptr) {
+      std::ostringstream stream;
+      stream
+        << "The embedded xemu core was not loaded on this iPhone/iPad because JIT is not available yet. "
+        << "Use a JIT-enabled sideload workflow before starting emulation.";
+      if (errno != 0) {
+        stream << " mmap(MAP_JIT) failed: " << std::strerror(errno) << ".";
+      }
+      *reason = stream.str();
+    }
+    return false;
+  }
+
+  munmap(jitProbe, jitProbeSize);
+#endif
+  if (reason != nullptr) {
+    reason->clear();
+  }
+  return true;
+#endif
+}
+
 template <typename T>
 static T ResolveOptionalSymbol(const char *name)
 {
@@ -48,6 +87,11 @@ static T ResolveOptionalSymbol(const char *name)
 
   if (!gEmbeddedCoreLoadAttempted && gEmbeddedCoreDynamicHandle == nullptr) {
     gEmbeddedCoreLoadAttempted = true;
+    std::string preflightError;
+    if (!CanAttemptDynamicEmbeddedCoreLoad(&preflightError)) {
+      gEmbeddedCoreDynamicLoadError = preflightError;
+      return reinterpret_cast<T>(dlsym(RTLD_DEFAULT, name));
+    }
 
     NSMutableArray<NSString *> *candidates = [NSMutableArray array];
     NSBundle *mainBundle = [NSBundle mainBundle];
@@ -276,8 +320,6 @@ static NSString *EmbeddedCoreDynamicPathString(void)
 
 static NSString *EmbeddedCoreLoaderStatusString(void)
 {
-  ResolveOptionalSymbol<void *>("xemu_embedded_boot");
-
   std::lock_guard<std::mutex> lock(gEmbeddedCoreLoaderMutex);
   std::ostringstream stream;
 
@@ -285,10 +327,13 @@ static NSString *EmbeddedCoreLoaderStatusString(void)
     stream << "Dynamic embedded core image loaded.\n";
     stream << "Path: " << gEmbeddedCoreDynamicPath << "\n";
     stream << "A bundled signed framework is the preferred path for real iPhone/iPad startup.";
+  } else if (!gEmbeddedCoreLoadAttempted) {
+    stream << "Embedded core detection has not run yet.\n";
+    stream << "Tap 'Refresh Embedded Core Detection' or start the console to probe the current device.";
   } else if (!gEmbeddedCoreDynamicLoadError.empty()) {
     stream << gEmbeddedCoreDynamicLoadError;
   } else {
-    stream << "Embedded core loader has not attempted to resolve a dynamic image yet.";
+    stream << "Embedded core detection ran, but no dynamic image was resolved.";
   }
 
   return [NSString stringWithUTF8String:stream.str().c_str()];
@@ -561,8 +606,10 @@ static NSString *SummaryFromState(const SessionRuntimeState &state)
   self = [super init];
   if (self) {
     _controller = [[X1BoxNativeEmulatorViewController alloc] init];
-    _state.embeddedCoreLinked = EmbeddedCoreIsLinked();
-    _state.embeddedHostAPILinked = EmbeddedHostAPIIsLinked();
+    _state.embeddedCoreLinked = false;
+    _state.embeddedHostAPILinked = false;
+    _state.statusLine =
+      "Embedded core detection is deferred until you explicitly refresh it or start a session.";
   }
   return self;
 }
@@ -664,6 +711,24 @@ static NSString *SummaryFromState(const SessionRuntimeState &state)
   _state.bootThreadActive = false;
   _state.configPath = StdStringFromNSString(configPath);
 
+  if (!_state.embeddedCoreLinked) {
+    _state.running = false;
+    NSString *loaderStatus = EmbeddedCoreLoaderStatusString();
+    _state.statusLine = StdStringFromNSString(loaderStatus);
+    [self.controller setFramePumpEnabled:NO];
+    [self syncController];
+    if (error != nil) {
+      *error = [NSError errorWithDomain:X1BoxNativeBridgeErrorDomain
+                                   code:18
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey: loaderStatus.length > 0
+                                   ? loaderStatus
+                                   : @"The embedded iOS core is not available on this device yet."
+                               }];
+    }
+    return NO;
+  }
+
   EmbeddedBootFn embeddedBoot = EmbeddedBootSymbol();
   if (_state.embeddedHostAPILinked && embeddedBoot != nullptr) {
     const char *bootError = NULL;
@@ -687,15 +752,10 @@ static NSString *SummaryFromState(const SessionRuntimeState &state)
     return YES;
   }
 
-  _state.statusLine = _state.embeddedCoreLinked
-    ? "Raw core symbols are linked, but the embedded iOS host API is missing. Falling back to qemu_init/qemu_main bootstrap."
-    : "Embedded core symbols are not linked yet. Running the iOS shell fallback.";
+  _state.statusLine =
+    "Raw core symbols are linked, but the embedded iOS host API is missing. Falling back to qemu_init/qemu_main bootstrap.";
   [self.controller setFramePumpEnabled:NO];
   [self syncController];
-
-  if (!_state.embeddedCoreLinked) {
-    return YES;
-  }
 
   XemuSettingsSetPathFn setSettingsPath = XemuSettingsSetPathSymbol();
   if (setSettingsPath != nullptr) {

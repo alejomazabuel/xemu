@@ -10,7 +10,7 @@ struct SettingsView: View {
   @State private var isImportingEEPROM = false
   @State private var isImportingEmbeddedCore = false
   @State private var assetErrorMessage: String?
-  @State private var embeddedCoreStatus: String = X1BoxNativeBridge.shared().embeddedCoreStatusSummary()
+  @State private var embeddedCoreStatus: String = "Embedded core detection has not run yet."
   @State private var embeddedCorePath: String?
 
   init(store: SettingsStore, setupStore: SetupAssetStore, onDismiss: @escaping () -> Void) {
@@ -269,9 +269,6 @@ struct SettingsView: View {
       }
     }
     .preferredColorScheme(.dark)
-    .onAppear {
-      refreshEmbeddedCoreStatus()
-    }
     .fileImporter(
       isPresented: $isImportingEmbeddedCore,
       allowedContentTypes: [.item, .folder],
