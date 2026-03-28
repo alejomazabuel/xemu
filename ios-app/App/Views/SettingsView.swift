@@ -7,8 +7,7 @@ struct SettingsView: View {
   let onDismiss: () -> Void
 
   @State private var draft: EmulatorSettings
-  @State private var isImportingEEPROM = false
-  @State private var isImportingEmbeddedCore = false
+  @State private var activeImportRequest: X1BoxImportRequest?
   @State private var assetErrorMessage: String?
   @State private var embeddedCoreStatus: String = "Embedded core detection has not run yet."
   @State private var embeddedCorePath: String?
@@ -56,7 +55,7 @@ struct SettingsView: View {
           }
 
           Button("Import Embedded Core") {
-            isImportingEmbeddedCore = true
+            activeImportRequest = .embeddedCore
           }
 
           if setupStore.summary.record(for: .embeddedCore) != nil {
@@ -229,7 +228,7 @@ struct SettingsView: View {
           }
 
           Button("Import EEPROM") {
-            isImportingEEPROM = true
+            activeImportRequest = .eeprom
           }
 
           if setupStore.summary.record(for: .eeprom) != nil {
@@ -269,42 +268,37 @@ struct SettingsView: View {
       }
     }
     .preferredColorScheme(.dark)
-    .fileImporter(
-      isPresented: $isImportingEmbeddedCore,
-      allowedContentTypes: [.item, .folder],
-      allowsMultipleSelection: false
-    ) { result in
-      switch result {
-      case .success(let urls):
-        guard let url = urls.first else { return }
-        do {
-          try setupStore.importEmbeddedCoreArtifact(from: url)
-          assetErrorMessage = nil
-          refreshEmbeddedCoreStatus()
-        } catch {
-          assetErrorMessage = error.localizedDescription
-        }
-      case .failure(let error):
-        assetErrorMessage = error.localizedDescription
+    .sheet(item: $activeImportRequest) { request in
+      X1BoxDocumentPicker(
+        allowedContentTypes: request.allowedContentTypes,
+        allowsMultipleSelection: false
+      ) { result in
+        handleImport(result, for: request.kind)
       }
     }
-    .fileImporter(
-      isPresented: $isImportingEEPROM,
-      allowedContentTypes: [.data, .item],
-      allowsMultipleSelection: false
-    ) { result in
-      switch result {
-      case .success(let urls):
-        guard let url = urls.first else { return }
-        do {
+  }
+
+  private func handleImport(_ result: Result<[URL], Error>, for kind: SetupAssetKind) {
+    activeImportRequest = nil
+    switch result {
+    case .success(let urls):
+      guard let url = urls.first else { return }
+      do {
+        switch kind {
+        case .embeddedCore:
+          try setupStore.importEmbeddedCoreArtifact(from: url)
+          refreshEmbeddedCoreStatus()
+        case .eeprom:
           try setupStore.importSelection(from: url, kind: .eeprom)
-          assetErrorMessage = nil
-        } catch {
-          assetErrorMessage = error.localizedDescription
+        default:
+          return
         }
-      case .failure(let error):
+        assetErrorMessage = nil
+      } catch {
         assetErrorMessage = error.localizedDescription
       }
+    case .failure(let error):
+      assetErrorMessage = error.localizedDescription
     }
   }
 

@@ -1,11 +1,10 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import UIKit
 
 struct SetupWizardView: View {
   @EnvironmentObject private var model: AppModel
-  @State private var pickingKind: SetupAssetKind?
-  @State private var isImportingFile = false
-  @State private var isImportingFolder = false
+  @State private var activeImportRequest: X1BoxImportRequest?
   @State private var errorMessage: String?
 
   private let orderedKinds: [SetupAssetKind] = [.mcpx, .flash, .hdd, .eeprom, .gamesFolder]
@@ -32,12 +31,7 @@ struct SetupWizardView: View {
                 .foregroundStyle(XboxTheme.muted)
 
               Button(kind.allowsFolderSelection ? "Choose Folder" : "Import File") {
-                pickingKind = kind
-                if kind.allowsFolderSelection {
-                  isImportingFolder = true
-                } else {
-                  isImportingFile = true
-                }
+                activeImportRequest = X1BoxImportRequest(kind: kind)
               }
               .buttonStyle(.borderedProminent)
               .tint(XboxTheme.accent)
@@ -62,19 +56,13 @@ struct SetupWizardView: View {
       }
       .navigationBarHidden(true)
     }
-    .fileImporter(
-      isPresented: $isImportingFile,
-      allowedContentTypes: [.data, .item],
-      allowsMultipleSelection: false
-    ) { result in
-      handleImport(result)
-    }
-    .fileImporter(
-      isPresented: $isImportingFolder,
-      allowedContentTypes: [.folder],
-      allowsMultipleSelection: false
-    ) { result in
-      handleImport(result)
+    .sheet(item: $activeImportRequest) { request in
+      X1BoxDocumentPicker(
+        allowedContentTypes: request.allowedContentTypes,
+        allowsMultipleSelection: false
+      ) { result in
+        handleImport(result, for: request.kind)
+      }
     }
   }
 
@@ -85,10 +73,8 @@ struct SetupWizardView: View {
     return kind.isRequired ? "Required" : "Optional"
   }
 
-  private func handleImport(_ result: Result<[URL], Error>) {
-    guard let kind = pickingKind else {
-      return
-    }
+  private func handleImport(_ result: Result<[URL], Error>, for kind: SetupAssetKind) {
+    activeImportRequest = nil
     switch result {
     case .success(let urls):
       guard let url = urls.first else { return }
@@ -101,6 +87,65 @@ struct SetupWizardView: View {
       }
     case .failure(let error):
       errorMessage = error.localizedDescription
+    }
+  }
+}
+
+struct X1BoxImportRequest: Identifiable {
+  let kind: SetupAssetKind
+  let allowedContentTypes: [UTType]
+
+  var id: String { kind.rawValue }
+
+  init(kind: SetupAssetKind, allowedContentTypes: [UTType]? = nil) {
+    self.kind = kind
+    if let allowedContentTypes {
+      self.allowedContentTypes = allowedContentTypes
+    } else if kind.allowsFolderSelection {
+      self.allowedContentTypes = [.folder]
+    } else {
+      self.allowedContentTypes = [.data]
+    }
+  }
+
+  static let embeddedCore = X1BoxImportRequest(kind: .embeddedCore, allowedContentTypes: [.item, .folder])
+  static let eeprom = X1BoxImportRequest(kind: .eeprom, allowedContentTypes: [.data])
+}
+
+struct X1BoxDocumentPicker: UIViewControllerRepresentable {
+  let allowedContentTypes: [UTType]
+  let allowsMultipleSelection: Bool
+  let onComplete: (Result<[URL], Error>) -> Void
+
+  func makeCoordinator() -> Coordinator {
+    Coordinator(onComplete: onComplete)
+  }
+
+  func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+    let controller = UIDocumentPickerViewController(
+      forOpeningContentTypes: allowedContentTypes,
+      asCopy: false
+    )
+    controller.delegate = context.coordinator
+    controller.allowsMultipleSelection = allowsMultipleSelection
+    return controller
+  }
+
+  func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
+
+  final class Coordinator: NSObject, UIDocumentPickerDelegate {
+    private let onComplete: (Result<[URL], Error>) -> Void
+
+    init(onComplete: @escaping (Result<[URL], Error>) -> Void) {
+      self.onComplete = onComplete
+    }
+
+    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+      onComplete(.success(urls))
+    }
+
+    func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+      onComplete(.success([]))
     }
   }
 }
