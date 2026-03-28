@@ -22,6 +22,7 @@ struct GameLibraryView: View {
       .sheet(isPresented: $model.isShowingSettings) {
         SettingsView(store: model.settingsStore, setupStore: model.setupStore) {
           model.isShowingSettings = false
+          model.refreshEmbeddedCoreAvailability()
         }
       }
       .task {
@@ -49,6 +50,7 @@ struct GameLibraryView: View {
         }
         .buttonStyle(.borderedProminent)
         .tint(XboxTheme.accent)
+        .disabled(!model.canAttemptEmulationLaunch)
 
         if model.emulatorSession.snapshotSlots.contains(where: { $0.isOccupied }) {
           Menu("Resume") {
@@ -60,6 +62,7 @@ struct GameLibraryView: View {
           }
           .buttonStyle(.bordered)
           .tint(XboxTheme.accent)
+          .disabled(!model.canAttemptEmulationLaunch)
         }
 
         Button(useGrid ? "List" : "Grid") {
@@ -73,6 +76,20 @@ struct GameLibraryView: View {
         }
         .buttonStyle(.bordered)
         .tint(XboxTheme.accent)
+      }
+
+      if let emulationReadinessMessage = model.emulationReadinessMessage {
+        Text(emulationReadinessMessage)
+          .font(.footnote)
+          .foregroundStyle(model.isEmbeddedCoreAvailable ? XboxTheme.muted : .yellow)
+      }
+
+      if let embeddedCoreResolvedPath = model.embeddedCoreResolvedPath,
+         !embeddedCoreResolvedPath.isEmpty {
+        Text(embeddedCoreResolvedPath)
+          .font(.footnote.monospaced())
+          .foregroundStyle(XboxTheme.accent)
+          .textSelection(.enabled)
       }
 
       if let emulatorErrorMessage = model.emulatorErrorMessage {
@@ -216,6 +233,7 @@ struct GameLibraryView: View {
       .frame(maxWidth: .infinity, alignment: .leading)
     }
     .buttonStyle(.plain)
+    .disabled(!model.canAttemptEmulationLaunch)
     .xboxPanel()
   }
 
@@ -245,6 +263,7 @@ struct GameLibraryView: View {
       .frame(maxWidth: .infinity, alignment: .leading)
     }
     .buttonStyle(.plain)
+    .disabled(!model.canAttemptEmulationLaunch)
     .xboxPanel()
   }
 }

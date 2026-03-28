@@ -6,6 +6,7 @@ SCHEME="X1BoxiOS"
 SIM_DESTINATION="${SIM_DESTINATION:-platform=iOS Simulator,name=iPhone 16,OS=latest}"
 BUILD_ROOT="${BUILD_ROOT:-build/ios-ci}"
 RUN_DEVICE_BUILD="${RUN_DEVICE_BUILD:-true}"
+RUN_SIMULATOR_VALIDATION="${RUN_SIMULATOR_VALIDATION:-auto}"
 APP_BUNDLE_ID="${APP_BUNDLE_ID:-com.alejomazabuel.x1boxios}"
 ENABLE_SIGNED_EXPORT="${ENABLE_SIGNED_EXPORT:-false}"
 APPLE_EXPORT_METHOD="${APPLE_EXPORT_METHOD:-development}"
@@ -20,6 +21,7 @@ echo "Using project: ${PROJECT}"
 echo "Using scheme: ${SCHEME}"
 echo "Using simulator destination: ${SIM_DESTINATION}"
 echo "Run generic iOS device build: ${RUN_DEVICE_BUILD}"
+echo "Run simulator validation: ${RUN_SIMULATOR_VALIDATION}"
 echo "Signed IPA export enabled: ${ENABLE_SIGNED_EXPORT}"
 
 run_step() {
@@ -32,22 +34,23 @@ run_step() {
   "$@" 2>&1 | tee "${BUILD_ROOT}/logs/${name}.log"
 }
 
+write_skip_log() {
+  local name="$1"
+  local message="$2"
+
+  echo
+  echo "==> ${name}"
+  printf '%s\n' "${message}" | tee "${BUILD_ROOT}/logs/${name}.log"
+}
+
 find_simulator_app() {
   find "${BUILD_ROOT}/DerivedData-simulator/Build/Products" \
     -path "*Debug-iphonesimulator/X1BoxiOS.app" \
     | head -n 1
 }
 
-smoke_launch_simulator() {
-  local app_path="$1"
-  local simulator_udid
-
-  if [[ -z "${app_path}" ]] || [[ ! -d "${app_path}" ]]; then
-    echo "Simulator app bundle not found for smoke launch." >&2
-    return 1
-  fi
-
-  simulator_udid="$(python3 - "${SIM_DESTINATION}" <<'PY'
+resolve_simulator_udid() {
+  python3 - "${SIM_DESTINATION}" <<'PY'
 import json
 import subprocess
 import sys
@@ -83,15 +86,24 @@ for runtime, devices in data.get("devices", {}).items():
         matches.append((device.get("state") == "Booted", runtime_os, device.get("udid", "")))
 
 if not matches:
-    sys.exit(1)
+    sys.exit(0)
 
 matches.sort(reverse=True)
 print(matches[0][2])
 PY
-)"
+}
+
+smoke_launch_simulator() {
+  local app_path="$1"
+  local simulator_udid="$2"
 
   if [[ -z "${simulator_udid}" ]]; then
     echo "Failed to resolve a simulator UDID for ${SIM_DESTINATION}." >&2
+    return 1
+  fi
+
+  if [[ -z "${app_path}" ]] || [[ ! -d "${app_path}" ]]; then
+    echo "Simulator app bundle not found for smoke launch." >&2
     return 1
   fi
 
@@ -164,33 +176,52 @@ run_step show-build-settings \
   xcodebuild \
     -project "${PROJECT}" \
     -scheme "${SCHEME}" \
+    -destination "generic/platform=iOS" \
     -showBuildSettings
 
-run_step build-simulator \
-  xcodebuild \
-    -project "${PROJECT}" \
-    -scheme "${SCHEME}" \
-    -configuration Debug \
-    -destination "${SIM_DESTINATION}" \
-    -derivedDataPath "${BUILD_ROOT}/DerivedData-simulator" \
-    CODE_SIGNING_ALLOWED=NO \
-    build
+SIMULATOR_UDID=""
+if [[ "${RUN_SIMULATOR_VALIDATION}" != "false" ]]; then
+  SIMULATOR_UDID="$(resolve_simulator_udid || true)"
+fi
 
-run_step test-simulator \
-  xcodebuild \
-    -project "${PROJECT}" \
-    -scheme "${SCHEME}" \
-    -configuration Debug \
-    -destination "${SIM_DESTINATION}" \
-    -derivedDataPath "${BUILD_ROOT}/DerivedData-tests" \
-    -resultBundlePath "${BUILD_ROOT}/results/X1BoxiOS-SimulatorTests.xcresult" \
-    CODE_SIGNING_ALLOWED=NO \
-    test
+if [[ -n "${SIMULATOR_UDID}" ]]; then
+  run_step build-simulator \
+    xcodebuild \
+      -project "${PROJECT}" \
+      -scheme "${SCHEME}" \
+      -configuration Debug \
+      -destination "${SIM_DESTINATION}" \
+      -derivedDataPath "${BUILD_ROOT}/DerivedData-simulator" \
+      CODE_SIGNING_ALLOWED=NO \
+      build
 
-SIMULATOR_APP_PATH="$(find_simulator_app)"
-run_step smoke-launch-simulator \
-  smoke_launch_simulator \
-  "${SIMULATOR_APP_PATH}"
+  run_step test-simulator \
+    xcodebuild \
+      -project "${PROJECT}" \
+      -scheme "${SCHEME}" \
+      -configuration Debug \
+      -destination "${SIM_DESTINATION}" \
+      -derivedDataPath "${BUILD_ROOT}/DerivedData-tests" \
+      -resultBundlePath "${BUILD_ROOT}/results/X1BoxiOS-SimulatorTests.xcresult" \
+      CODE_SIGNING_ALLOWED=NO \
+      test
+
+  SIMULATOR_APP_PATH="$(find_simulator_app)"
+  run_step smoke-launch-simulator \
+    smoke_launch_simulator \
+    "${SIMULATOR_APP_PATH}" \
+    "${SIMULATOR_UDID}"
+elif [[ "${RUN_SIMULATOR_VALIDATION}" == "true" ]]; then
+  echo "No available simulator matched ${SIM_DESTINATION}." >&2
+  exit 1
+else
+  write_skip_log build-simulator \
+    "Skipped simulator build because no available simulator matched ${SIM_DESTINATION}. Device build and IPA packaging will continue."
+  write_skip_log test-simulator \
+    "Skipped simulator tests because no available simulator matched ${SIM_DESTINATION}."
+  write_skip_log smoke-launch-simulator \
+    "Skipped simulator smoke launch because no available simulator matched ${SIM_DESTINATION}."
+fi
 
 if [[ "${RUN_DEVICE_BUILD}" == "true" ]]; then
   run_step build-device \

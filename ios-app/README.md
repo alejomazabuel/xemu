@@ -139,6 +139,74 @@ Examples:
 .\ios-app\scripts\fork-workflow-bridge.ps1 -Workflow "build-ios-app.yml" -ArtifactName "x1box-ios-ci" -EmbeddedCoreRunId 123456999
 ```
 
+## Remote macOS build host from Windows
+
+If you already have a macOS VM or Mac on the same network, you can use it as the interactive iOS build host while keeping this Windows workspace as the main editing environment.
+
+This path is useful when you want:
+
+- local Xcode and simulator access on macOS
+- a repeatable one-command remote build from Windows
+- build logs and unsigned IPA artifacts copied back into this workspace
+
+### One-time remote setup
+
+1. On macOS, enable `Remote Login` in `System Settings -> General -> Sharing`.
+2. From this Windows repo, run:
+
+```powershell
+.\ios-app\scripts\setup-ios-remote-mac.cmd `
+  -MacHost "192.168.3.128" `
+  -MacUser "alejandro.mazabuelicloud.com" `
+  -RemoteWorkspace "~/x1box-remote-build"
+```
+
+That script will:
+
+- create a dedicated SSH key if needed
+- install the public key on the remote macOS account
+- verify passwordless SSH
+- create the remote workspace directory
+- clone the repository there if it is missing
+- save local connection details to `build/ios-remote/remote-mac.json`
+
+By default the setup script prefers the Git remote tracked by the current branch. In this repository that means it will pick your fork automatically when the branch tracks `fork/...`.
+
+### Running a remote iOS build
+
+After the branch is pushed to the Git remote that your Mac can fetch, run:
+
+```powershell
+.\ios-app\scripts\build-ios-remote.cmd -Ref "codex/ios-reactive-workflow"
+```
+
+Useful overrides:
+
+```powershell
+.\ios-app\scripts\build-ios-remote.cmd `
+  -Ref "main" `
+  -SimDestination "platform=iOS Simulator,name=iPhone 16,OS=latest" `
+  -RunDeviceBuild $true
+```
+
+The remote build script will:
+
+- connect to the configured Mac by SSH
+- fetch and check out the requested Git ref in the remote workspace
+- run `ios-app/scripts/ci-build-ios.sh`
+- download `build/ios-ci` back into `build/ios-remote/runs/<timestamp>/`
+
+Important note:
+
+- the remote build uses the requested Git ref from the remote repository
+- uncommitted Windows changes are not synced automatically
+- if your local working tree contains iOS changes you want to test remotely, push that branch first
+
+This remote-mac flow complements the GitHub Actions workflows above:
+
+- use the Mac VM when you need Xcode, simulator inspection, or local signing work
+- use GitHub Actions when you want unattended macOS CI and artifact history
+
 ## Official xemu linkage target
 
 This project is meant to align with the upstream xemu Apple/SDL architecture from the main repo:

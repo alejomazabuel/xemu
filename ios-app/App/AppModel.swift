@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import X1BoxNativeCore
 
 @MainActor
 final class AppModel: ObservableObject {
@@ -16,6 +17,9 @@ final class AppModel: ObservableObject {
   @Published var scanErrorMessage: String?
   @Published var emulatorErrorMessage: String?
   @Published var emulatorNoticeMessage: String?
+  @Published private(set) var embeddedCoreStatusSummary: String = "Embedded core detection has not run yet."
+  @Published private(set) var embeddedCoreResolvedPath: String?
+  @Published private(set) var isEmbeddedCoreAvailable = false
 
   let setupStore: SetupAssetStore
   let settingsStore: SettingsStore
@@ -31,6 +35,7 @@ final class AppModel: ObservableObject {
     self.controllerMonitor = GameControllerMonitor()
     self.emulatorSession = EmulatorSession()
     bindChildObjects()
+    refreshEmbeddedCoreAvailability()
     refreshRoute()
   }
 
@@ -45,14 +50,45 @@ final class AppModel: ObservableObject {
     self.controllerMonitor = controllerMonitor
     self.emulatorSession = emulatorSession
     bindChildObjects()
+    refreshEmbeddedCoreAvailability()
     refreshRoute()
+  }
+
+  var canAttemptEmulationLaunch: Bool {
+    setupStore.summary.isCoreReady && isEmbeddedCoreAvailable
+  }
+
+  var emulationReadinessMessage: String? {
+    if !setupStore.summary.isCoreReady {
+      return "Complete the required MCPX, flash, HDD, and games-folder setup before starting emulation."
+    }
+
+    if isEmbeddedCoreAvailable {
+      return nil
+    }
+
+    let summary = embeddedCoreStatusSummary.trimmingCharacters(in: .whitespacesAndNewlines)
+    if !summary.isEmpty {
+      return summary
+    }
+
+    return "Import or bundle a signed X1BoxEmbeddedCore artifact before launching emulation on iPhone or iPad."
   }
 
   func refreshRoute() {
     route = setupStore.summary.isCoreReady ? .library : .setup
   }
 
+  func refreshEmbeddedCoreAvailability() {
+    let bridge = X1BoxNativeBridge.shared()
+    bridge.refreshEmbeddedCoreAvailability()
+    isEmbeddedCoreAvailable = bridge.isEmbeddedCoreLinked()
+    embeddedCoreStatusSummary = bridge.embeddedCoreStatusSummary()
+    embeddedCoreResolvedPath = bridge.resolvedEmbeddedCorePath()
+  }
+
   func reloadLibrary() async {
+    refreshEmbeddedCoreAvailability()
     emulatorSession.reloadSnapshotSlots()
     do {
       let games = try setupStore.withGamesFolderURL { folderURL in
@@ -67,6 +103,7 @@ final class AppModel: ObservableObject {
   }
 
   func startDashboard() async {
+    guard prepareForLaunch() else { return }
     emulatorErrorMessage = nil
     emulatorNoticeMessage = nil
     await emulatorSession.launchDashboard(setup: setupStore.summary, settings: settingsStore.settings)
@@ -74,6 +111,7 @@ final class AppModel: ObservableObject {
   }
 
   func start(game: GameEntry) async {
+    guard prepareForLaunch() else { return }
     emulatorErrorMessage = nil
     emulatorNoticeMessage = nil
     await emulatorSession.launch(game: game, setup: setupStore.summary, settings: settingsStore.settings)
@@ -107,6 +145,7 @@ final class AppModel: ObservableObject {
   }
 
   func resumeSnapshot(_ slot: EmulatorSession.SnapshotSlot) async {
+    guard prepareForLaunch() else { return }
     emulatorErrorMessage = nil
     emulatorNoticeMessage = nil
 
@@ -169,6 +208,19 @@ final class AppModel: ObservableObject {
         self?.objectWillChange.send()
       }
       .store(in: &cancellables)
+  }
+
+  private func prepareForLaunch() -> Bool {
+    refreshEmbeddedCoreAvailability()
+
+    guard canAttemptEmulationLaunch else {
+      emulatorNoticeMessage = nil
+      emulatorErrorMessage = emulationReadinessMessage
+      route = .library
+      return false
+    }
+
+    return true
   }
 
   private func syncLaunchOutcome() {
