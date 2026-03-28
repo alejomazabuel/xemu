@@ -10,9 +10,7 @@ enum AppLocalizer {
   static func format(_ key: String, languageCode: String? = nil, _ arguments: CVarArg...) -> String {
     let formatString = string(key, languageCode: languageCode)
     let locale = locale(languageCode: languageCode)
-    return withVaList(arguments) { pointer in
-      NSString(format: formatString as NSString, locale: locale, arguments: pointer) as String
-    }
+    return String(format: formatString, locale: locale, arguments: arguments)
   }
 
   static func locale(languageCode: String? = nil) -> Locale {
