@@ -563,23 +563,24 @@
       };
       name = Release;
     };
-    A18000000000000000000005 /* Debug */ = {
-      isa = XCBuildConfiguration;
-      buildSettings = {
-        CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
-        CLANG_ENABLE_MODULES = YES;
-        CURRENT_PROJECT_VERSION = 1;
-        DEFINES_MODULE = YES;
-        DYLIB_COMPATIBILITY_VERSION = 1;
-        DYLIB_CURRENT_VERSION = 1;
-        GENERATE_INFOPLIST_FILE = YES;
-        INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-        IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-        MACH_O_TYPE = mh_dylib;
-        OTHER_LDFLAGS = (
-          "$(inherited)",
-          "-framework",
-          UIKit,
+		A18000000000000000000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_DYLIB_INSTALL_NAME = "@rpath/$(EXECUTABLE_PATH)";
+				MACH_O_TYPE = mh_dylib;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					UIKit,
           "-framework",
           CoreGraphics,
           "-framework",
@@ -595,23 +596,24 @@
       };
       name = Debug;
     };
-    A18000000000000000000006 /* Release */ = {
-      isa = XCBuildConfiguration;
-      buildSettings = {
-        CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
-        CLANG_ENABLE_MODULES = YES;
-        CURRENT_PROJECT_VERSION = 1;
-        DEFINES_MODULE = YES;
-        DYLIB_COMPATIBILITY_VERSION = 1;
-        DYLIB_CURRENT_VERSION = 1;
-        GENERATE_INFOPLIST_FILE = YES;
-        INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-        IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-        MACH_O_TYPE = mh_dylib;
-        OTHER_LDFLAGS = (
-          "$(inherited)",
-          "-framework",
-          UIKit,
+		A18000000000000000000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_DYLIB_INSTALL_NAME = "@rpath/$(EXECUTABLE_PATH)";
+				MACH_O_TYPE = mh_dylib;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					UIKit,
           "-framework",
           CoreGraphics,
           "-framework",

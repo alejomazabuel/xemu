@@ -113,6 +113,47 @@ smoke_launch_simulator() {
   xcrun simctl launch "${simulator_udid}" "${APP_BUNDLE_ID}"
 }
 
+verify_embedded_loader_paths() {
+  local app_path="$1"
+  local app_binary="${app_path}/X1BoxiOS"
+  local framework_binary="${app_path}/Frameworks/X1BoxNativeCore.framework/X1BoxNativeCore"
+  local expected_install_name="@rpath/X1BoxNativeCore.framework/X1BoxNativeCore"
+  local forbidden_install_name="/Library/Frameworks/X1BoxNativeCore.framework/X1BoxNativeCore"
+  local app_dependencies
+  local framework_install_name
+
+  if [[ ! -f "${app_binary}" ]]; then
+    echo "App binary not found at ${app_binary}" >&2
+    return 1
+  fi
+
+  if [[ ! -f "${framework_binary}" ]]; then
+    echo "Embedded framework binary not found at ${framework_binary}" >&2
+    return 1
+  fi
+
+  app_dependencies="$(otool -L "${app_binary}")"
+  framework_install_name="$(otool -D "${framework_binary}" | tail -n +2 | head -n 1)"
+
+  if ! printf '%s\n' "${app_dependencies}" | grep -Fq "${expected_install_name}"; then
+    echo "App binary is not linked against the expected @rpath-based X1BoxNativeCore install name." >&2
+    printf '%s\n' "${app_dependencies}" >&2
+    return 1
+  fi
+
+  if [[ "${framework_install_name}" != "${expected_install_name}" ]]; then
+    echo "Embedded X1BoxNativeCore.framework install name is '${framework_install_name}', expected '${expected_install_name}'." >&2
+    return 1
+  fi
+
+  if printf '%s\n%s\n' "${app_dependencies}" "${framework_install_name}" | grep -Fq "${forbidden_install_name}"; then
+    echo "Detected macOS-style /Library/Frameworks install name in the packaged iOS app." >&2
+    return 1
+  fi
+
+  echo "Verified embedded framework loader paths for ${app_path}"
+}
+
 package_unsigned_ipa() {
   local archive_path="$1"
   local app_path="${archive_path}/Products/Applications/X1BoxiOS.app"
@@ -125,9 +166,12 @@ package_unsigned_ipa() {
     return 1
   fi
 
+  verify_embedded_loader_paths "${app_path}"
+
   rm -rf "${payload_root}" "${ipa_path}"
   mkdir -p "${payload_root}"
   /usr/bin/ditto "${app_path}" "${payload_root}/X1BoxiOS.app"
+  verify_embedded_loader_paths "${payload_root}/X1BoxiOS.app"
   (
     cd "${package_root}"
     /usr/bin/zip -qry "$(basename "${ipa_path}")" Payload
