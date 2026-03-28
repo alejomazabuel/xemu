@@ -1,8 +1,8 @@
 import Foundation
 
 struct BoxArtResolver {
-  private static let baseURL = URL(string: "https://raw.githubusercontent.com/izzy2lost/X1_Covers/main/")!
-  private static let titleStopWords: Set<String> = ["the", "a", "an", "and", "of", "for", "in", "on", "to"]
+  fileprivate static let baseURL = URL(string: "https://raw.githubusercontent.com/izzy2lost/X1_Covers/main/")!
+  fileprivate static let titleStopWords: Set<String> = ["the", "a", "an", "and", "of", "for", "in", "on", "to"]
   private static let lookupState = LookupState()
 
   func url(for game: GameEntry, enabled: Bool) -> URL? {
