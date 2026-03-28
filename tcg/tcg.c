@@ -1267,6 +1267,46 @@ static const TCGOutOp * const all_outop[NB_OPS] = {
 
 #undef OUTOP
 
+#ifdef CONFIG_TCG_INTERPRETER
+/*
+ * The TCI backend emits most operations through the generic register
+ * allocation switch below or via direct helper routines such as
+ * tcg_out_movi(). The default fallback still references tcg_out_op(),
+ * so provide the minimal interpreter implementation here to satisfy
+ * the linker and to cover the remaining simple cases if they ever
+ * reach the fallback path.
+ */
+static void tcg_out_op(TCGContext *s, TCGOpcode opc, TCGType type,
+                       const TCGArg args[TCG_MAX_OP_ARGS],
+                       const int const_args[TCG_MAX_OP_ARGS])
+{
+    switch (opc) {
+    case INDEX_op_br:
+        tcg_out_br(s, arg_label(args[0]));
+        return;
+    case INDEX_op_exit_tb:
+        tcg_out_exit_tb(s, args[0]);
+        return;
+    case INDEX_op_goto_tb:
+        tcg_out_goto_tb(s, args[0]);
+        return;
+    case INDEX_op_goto_ptr:
+        tcg_debug_assert(!const_args[0]);
+        tcg_out_goto_ptr(s, args[0]);
+        return;
+    case INDEX_op_mb:
+        tcg_out_mb(s, args[0]);
+        return;
+    case INDEX_op_mov:
+        tcg_debug_assert(!const_args[1]);
+        tcg_out_mov(s, type, args[0], args[1]);
+        return;
+    default:
+        g_assert_not_reached();
+    }
+}
+#endif
+
 /*
  * All TCG threads except the parent (i.e. the one that called tcg_context_init
  * and registered the target's TCG globals) must register with this function
