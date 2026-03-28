@@ -28,6 +28,14 @@ final class NativeBridgeTests: XCTestCase {
 
     let summary = bridge.embeddedCoreStatusSummary()
     XCTAssertFalse(summary.isEmpty)
-    XCTAssertTrue(summary.localizedCaseInsensitiveContains("dynamic embedded core image loaded"))
+    let expectedPhrases = [
+      "Bundled embedded core image loaded from the installed IPA.",
+      "Imported embedded core override loaded from app storage.",
+      "Dynamic embedded core image loaded."
+    ]
+    XCTAssertTrue(
+      expectedPhrases.contains(where: { summary.localizedCaseInsensitiveContains($0) }),
+      "Unexpected embedded core status summary: \(summary)"
+    )
   }
 }
