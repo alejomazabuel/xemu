@@ -299,6 +299,7 @@ configure_and_build() {
     --disable-vte \
     --without-default-features \
     --audio-drv-list=sdl \
+    --enable-tcg-interpreter \
     --enable-opengl \
     --enable-pixman \
     --enable-png \

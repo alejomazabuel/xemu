@@ -35,7 +35,7 @@ struct SettingsView: View {
             .font(.footnote)
             .foregroundStyle(XboxTheme.muted)
 
-          Text(setupStore.summary.record(for: .embeddedCore)?.displayName ?? "No embedded core artifact imported into app storage.")
+          Text(embeddedCoreSourceSummary)
             .font(.footnote)
             .foregroundStyle(XboxTheme.muted)
 
@@ -268,6 +268,7 @@ struct SettingsView: View {
       }
     }
     .preferredColorScheme(.dark)
+    .onAppear(perform: refreshEmbeddedCoreStatus)
     .sheet(item: $activeImportRequest) { request in
       X1BoxDocumentPicker(
         allowedContentTypes: request.allowedContentTypes,
@@ -300,6 +301,22 @@ struct SettingsView: View {
     case .failure(let error):
       assetErrorMessage = error.localizedDescription
     }
+  }
+
+  private var embeddedCoreSourceSummary: String {
+    if let importedRecord = setupStore.summary.record(for: .embeddedCore) {
+      return "Imported embedded core override: \(importedRecord.displayName)"
+    }
+
+    if let embeddedCorePath,
+       !embeddedCorePath.isEmpty {
+      if embeddedCorePath.contains(".app/") {
+        return "Bundled embedded core detected inside the installed IPA."
+      }
+      return "Embedded core resolved at runtime."
+    }
+
+    return "No imported override in app storage. The app will use the bundled embedded core when it is available."
   }
 
   private func refreshEmbeddedCoreStatus() {

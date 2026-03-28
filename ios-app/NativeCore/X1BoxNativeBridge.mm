@@ -4,10 +4,7 @@
 #import <QuartzCore/QuartzCore.h>
 
 #include <TargetConditionals.h>
-#include <errno.h>
 #include <dlfcn.h>
-#include <sys/mman.h>
-#include <cstring>
 #include <map>
 #include <mutex>
 #include <sstream>
@@ -44,42 +41,6 @@ using DeleteSnapshotFn = bool (*)(const char *, bool, strList *, Error **);
 using ErrorGetPrettyFn = const char *(*)(const Error *);
 using ErrorFreeFn = void (*)(Error *);
 
-static bool CanAttemptDynamicEmbeddedCoreLoad(std::string *reason)
-{
-#if TARGET_OS_SIMULATOR
-  if (reason != nullptr) {
-    reason->clear();
-  }
-  return true;
-#else
-#ifdef MAP_JIT
-  constexpr size_t jitProbeSize = 0x4000;
-  errno = 0;
-  void *jitProbe = mmap(nullptr, jitProbeSize, PROT_READ | PROT_WRITE,
-                        MAP_PRIVATE | MAP_ANON | MAP_JIT, -1, 0);
-  if (jitProbe == MAP_FAILED) {
-    if (reason != nullptr) {
-      std::ostringstream stream;
-      stream
-        << "The embedded xemu core was not loaded on this iPhone/iPad because JIT is not available yet. "
-        << "Use a JIT-enabled sideload workflow before starting emulation.";
-      if (errno != 0) {
-        stream << " mmap(MAP_JIT) failed: " << std::strerror(errno) << ".";
-      }
-      *reason = stream.str();
-    }
-    return false;
-  }
-
-  munmap(jitProbe, jitProbeSize);
-#endif
-  if (reason != nullptr) {
-    reason->clear();
-  }
-  return true;
-#endif
-}
-
 template <typename T>
 static T ResolveOptionalSymbol(const char *name)
 {
@@ -87,11 +48,6 @@ static T ResolveOptionalSymbol(const char *name)
 
   if (!gEmbeddedCoreLoadAttempted && gEmbeddedCoreDynamicHandle == nullptr) {
     gEmbeddedCoreLoadAttempted = true;
-    std::string preflightError;
-    if (!CanAttemptDynamicEmbeddedCoreLoad(&preflightError)) {
-      gEmbeddedCoreDynamicLoadError = preflightError;
-      return reinterpret_cast<T>(dlsym(RTLD_DEFAULT, name));
-    }
 
     NSMutableArray<NSString *> *candidates = [NSMutableArray array];
     NSBundle *mainBundle = [NSBundle mainBundle];
@@ -322,11 +278,25 @@ static NSString *EmbeddedCoreLoaderStatusString(void)
 {
   std::lock_guard<std::mutex> lock(gEmbeddedCoreLoaderMutex);
   std::ostringstream stream;
+  const bool loadedFromAppBundle =
+    gEmbeddedCoreDynamicPath.find(".app/") != std::string::npos;
+  const bool loadedFromApplicationSupport =
+    gEmbeddedCoreDynamicPath.find("/Application Support/") != std::string::npos;
 
   if (!gEmbeddedCoreDynamicPath.empty()) {
-    stream << "Dynamic embedded core image loaded.\n";
+    if (loadedFromAppBundle) {
+      stream << "Bundled embedded core image loaded from the installed IPA.\n";
+    } else if (loadedFromApplicationSupport) {
+      stream << "Imported embedded core override loaded from app storage.\n";
+    } else {
+      stream << "Dynamic embedded core image loaded.\n";
+    }
     stream << "Path: " << gEmbeddedCoreDynamicPath << "\n";
-    stream << "A bundled signed framework is the preferred path for real iPhone/iPad startup.";
+    if (loadedFromAppBundle) {
+      stream << "This IPA already contains the native core, so manual import is optional.";
+    } else {
+      stream << "A bundled signed framework is the preferred path for real iPhone/iPad startup.";
+    }
   } else if (!gEmbeddedCoreLoadAttempted) {
     stream << "Embedded core detection has not run yet.\n";
     stream << "Tap 'Refresh Embedded Core Detection' or start the console to probe the current device.";
