@@ -345,6 +345,7 @@ if ([string]::IsNullOrWhiteSpace($resolvedRemoteWorkspace)) {
 
 $currentCommit = Get-CurrentCommit
 $runTimestamp = Get-Date -Format "yyyyMMdd-HHmmss"
+$resolvedRemoteRunWorkspace = ($resolvedRemoteWorkspace.TrimEnd("/") + "/runs/" + $runTimestamp)
 $outputDirectoryAbsolute = Resolve-AbsolutePath -Path $OutputDirectory -BasePath $repoRoot
 $runOutputDirectory = Join-Path $outputDirectoryAbsolute $runTimestamp
 New-Item -ItemType Directory -Force -Path $runOutputDirectory | Out-Null
@@ -354,6 +355,7 @@ $metadata = [ordered]@{
   mac_host = $MacHost
   mac_user = $MacUser
   remote_workspace = $resolvedRemoteWorkspace
+  remote_run_workspace = $resolvedRemoteRunWorkspace
   git_ref = $Ref
   local_commit = $currentCommit
   clone_url = $CloneUrl
@@ -372,23 +374,36 @@ if ($warningStatus.ExitCode -eq 0) {
   }
 }
 
-$remoteRepoPathLiteral = Quote-BashLiteral -Value $resolvedRemoteWorkspace
-$remoteRepoGitPathLiteral = Quote-BashLiteral -Value ($resolvedRemoteWorkspace.TrimEnd("/") + "/.git")
+$remoteWorkspaceRootLiteral = Quote-BashLiteral -Value $resolvedRemoteWorkspace
+$remoteRepoPathLiteral = Quote-BashLiteral -Value $resolvedRemoteRunWorkspace
+$remoteRepoGitPathLiteral = Quote-BashLiteral -Value ($resolvedRemoteRunWorkspace.TrimEnd("/") + "/.git")
 $cloneUrlLiteral = Quote-BashLiteral -Value $CloneUrl
 $remoteRefLiteral = Quote-BashLiteral -Value $Ref
 $remoteOriginRefLiteral = Quote-BashLiteral -Value ("origin/$Ref")
 $runDeviceBuildValue = if ($RunDeviceBuild) { "true" } else { "false" }
 $remoteBuildCommandParts = New-Object System.Collections.Generic.List[string]
 $remoteBuildCommandParts.Add("set -euo pipefail")
-$remoteBuildCommandParts.Add("if [ ! -d $remoteRepoGitPathLiteral ]; then git clone $cloneUrlLiteral $remoteRepoPathLiteral; fi")
+$remoteBuildCommandParts.Add("mkdir -p $remoteWorkspaceRootLiteral")
+$remoteBuildCommandParts.Add("mkdir -p $(Quote-BashLiteral -Value ($resolvedRemoteWorkspace.TrimEnd('/') + '/runs'))")
+$remoteBuildCommandParts.Add("if [ -d $remoteRepoPathLiteral ]; then rm -rf $remoteRepoPathLiteral; fi")
+$remoteBuildCommandParts.Add("git clone $cloneUrlLiteral $remoteRepoPathLiteral")
 $remoteBuildCommandParts.Add("cd $remoteRepoPathLiteral")
 if (-not $SkipFetch) {
   $remoteBuildCommandParts.Add("git fetch --all --tags --prune")
 }
 $remoteBuildCommandParts.Add("if git show-ref --verify --quiet $(Quote-BashLiteral -Value ("refs/remotes/origin/$Ref")); then git checkout -B $remoteRefLiteral $remoteOriginRefLiteral; else git checkout $remoteRefLiteral; fi")
+$remoteBuildCommandParts.Add("git submodule update --init --recursive")
 $remoteBuildCommandParts.Add("mkdir -p build/ios-remote")
+$remoteBuildCommandParts.Add("python3 -m venv build/ios-remote/python-env")
+$remoteBuildCommandParts.Add(". build/ios-remote/python-env/bin/activate")
+$remoteBuildCommandParts.Add("python -m pip install --upgrade pip")
+$remoteBuildCommandParts.Add("python -m pip install meson ninja pyyaml")
 $remoteBuildCommandParts.Add("printf '%s\n' $remoteRefLiteral > build/ios-remote/last-ref.txt")
 $remoteBuildCommandParts.Add("git rev-parse HEAD > build/ios-remote/last-commit.txt")
+$remoteBuildCommandParts.Add("bash ios-app/scripts/build-x1box-ios-deps.sh")
+$remoteBuildCommandParts.Add("export X1BOX_IOS_DEPS_ROOT=build/ios-deps/artifacts/x1box-ios-deps")
+$remoteBuildCommandParts.Add("bash ios-app/scripts/build-x1box-embedded-core.sh")
+$remoteBuildCommandParts.Add("bash ios-app/scripts/prepare-embedded-core-dropin.sh build/ios-embedded-core/artifacts ios-app/EmbeddedCore")
 $remoteBuildCommandParts.Add("export SIM_DESTINATION=$(Quote-BashLiteral -Value $SimDestination)")
 $remoteBuildCommandParts.Add("export RUN_DEVICE_BUILD=$(Quote-BashLiteral -Value $runDeviceBuildValue)")
 $remoteBuildCommandParts.Add("bash ios-app/scripts/ci-build-ios.sh")
@@ -404,15 +419,15 @@ if (-not $SkipDownload) {
   New-Item -ItemType Directory -Force -Path $localArtifactRoot | Out-Null
 
   foreach ($artifactName in @("logs", "packages", "signed", "results")) {
-    $remoteArtifactPath = "{0}:{1}/build/ios-ci/{2}" -f $target, $resolvedRemoteWorkspace, $artifactName
+    $remoteArtifactPath = "{0}:{1}/build/ios-ci/{2}" -f $target, $resolvedRemoteRunWorkspace, $artifactName
     $artifactResult = Invoke-ExternalCommand -Command $script:ScpBinaryPath -Arguments @("-o", "StrictHostKeyChecking=accept-new", "-i", $SshKeyPath, "-r", $remoteArtifactPath, $localArtifactRoot)
     if ($artifactResult.ExitCode -ne 0) {
       Write-Warning "Remote artifact path build/ios-ci/$artifactName was not downloaded. It may not have been produced for this run."
     }
   }
 
-  $lastRefSource = "{0}:{1}/build/ios-remote/last-ref.txt" -f $target, $resolvedRemoteWorkspace
-  $lastCommitSource = "{0}:{1}/build/ios-remote/last-commit.txt" -f $target, $resolvedRemoteWorkspace
+  $lastRefSource = "{0}:{1}/build/ios-remote/last-ref.txt" -f $target, $resolvedRemoteRunWorkspace
+  $lastCommitSource = "{0}:{1}/build/ios-remote/last-commit.txt" -f $target, $resolvedRemoteRunWorkspace
   Invoke-ExternalCommand -Command $script:ScpBinaryPath -Arguments @("-o", "StrictHostKeyChecking=accept-new", "-i", $SshKeyPath, $lastRefSource, $runOutputDirectory) | Out-Null
   Invoke-ExternalCommand -Command $script:ScpBinaryPath -Arguments @("-o", "StrictHostKeyChecking=accept-new", "-i", $SshKeyPath, $lastCommitSource, $runOutputDirectory) | Out-Null
 }

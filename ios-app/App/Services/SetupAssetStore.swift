@@ -67,7 +67,7 @@ final class SetupAssetStore: ObservableObject {
     let bookmarkKey = bookmarkStorageKey(for: .gamesFolder)
     guard let bookmarkData = defaults.data(forKey: bookmarkKey) else {
       throw NSError(domain: "X1Box.SetupAssetStore", code: 1, userInfo: [
-        NSLocalizedDescriptionKey: "Games folder bookmark is missing."
+        NSLocalizedDescriptionKey: AppLocalizer.string("Games folder bookmark is missing.")
       ])
     }
 
@@ -201,7 +201,7 @@ final class SetupAssetStore: ObservableObject {
     let fileManager = FileManager.default
     guard fileManager.fileExists(atPath: sourceURL.path, isDirectory: &isDirectory) else {
       throw NSError(domain: "X1Box.SetupAssetStore", code: 2, userInfo: [
-        NSLocalizedDescriptionKey: "The selected embedded core artifact no longer exists."
+        NSLocalizedDescriptionKey: AppLocalizer.string("The selected embedded core artifact no longer exists.")
       ])
     }
 
@@ -212,7 +212,7 @@ final class SetupAssetStore: ObservableObject {
         : "X1BoxEmbeddedCore.framework"
       guard sourceURL.lastPathComponent.caseInsensitiveCompare(expectedName) == .orderedSame else {
         throw NSError(domain: "X1Box.SetupAssetStore", code: 3, userInfo: [
-          NSLocalizedDescriptionKey: "Select the full X1BoxEmbeddedCore.framework or X1BoxEmbeddedCore.xcframework bundle."
+          NSLocalizedDescriptionKey: AppLocalizer.string("Select the full X1BoxEmbeddedCore.framework or X1BoxEmbeddedCore.xcframework bundle.")
         ])
       }
       return extensionName == "xcframework"
@@ -226,7 +226,7 @@ final class SetupAssetStore: ObservableObject {
     }
 
     throw NSError(domain: "X1Box.SetupAssetStore", code: 4, userInfo: [
-      NSLocalizedDescriptionKey: "Select X1BoxEmbeddedCore.framework, X1BoxEmbeddedCore.xcframework, or libxemu-ios-core.dylib."
+      NSLocalizedDescriptionKey: AppLocalizer.string("Select X1BoxEmbeddedCore.framework, X1BoxEmbeddedCore.xcframework, or libxemu-ios-core.dylib.")
     ])
   }
 

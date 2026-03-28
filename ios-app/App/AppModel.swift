@@ -17,7 +17,7 @@ final class AppModel: ObservableObject {
   @Published var scanErrorMessage: String?
   @Published var emulatorErrorMessage: String?
   @Published var emulatorNoticeMessage: String?
-  @Published private(set) var embeddedCoreStatusSummary: String = "Embedded core detection has not run yet."
+  @Published private(set) var embeddedCoreStatusSummary: String = AppLocalizer.string("Embedded core detection has not run yet.")
   @Published private(set) var embeddedCoreResolvedPath: String?
   @Published private(set) var isEmbeddedCoreAvailable = false
 
@@ -59,8 +59,13 @@ final class AppModel: ObservableObject {
   }
 
   var emulationReadinessMessage: String? {
+    let languageCode = settingsStore.settings.appLanguage
+
     if !setupStore.summary.isCoreReady {
-      return "Complete the required MCPX, flash, HDD, and games-folder setup before starting emulation."
+      return AppLocalizer.string(
+        "Complete the required MCPX, flash, HDD, and games-folder setup before starting emulation.",
+        languageCode: languageCode
+      )
     }
 
     if isEmbeddedCoreAvailable {
@@ -72,7 +77,10 @@ final class AppModel: ObservableObject {
       return summary
     }
 
-    return "Import or bundle a signed X1BoxEmbeddedCore artifact before launching emulation on iPhone or iPad."
+    return AppLocalizer.string(
+      "Import or bundle a signed X1BoxEmbeddedCore artifact before launching emulation on iPhone or iPad.",
+      languageCode: languageCode
+    )
   }
 
   func refreshRoute() {
@@ -155,12 +163,21 @@ final class AppModel: ObservableObject {
     case "game":
       guard let relativePath = slot.relativePath,
             let game = games.first(where: { $0.relativePath == relativePath }) else {
-        emulatorErrorMessage = "The original game file for snapshot slot \(slot.slotNumber) could not be found in the current library."
+        emulatorErrorMessage = String(
+          format: AppLocalizer.string(
+            "The original game file for snapshot slot %d could not be found in the current library.",
+            languageCode: settingsStore.settings.appLanguage
+          ),
+          slot.slotNumber
+        )
         return
       }
       await emulatorSession.launch(game: game, setup: setupStore.summary, settings: settingsStore.settings)
     default:
-      emulatorErrorMessage = "Snapshot slot \(slot.slotNumber) is empty."
+      emulatorErrorMessage = String(
+        format: AppLocalizer.string("Snapshot slot %d is empty.", languageCode: settingsStore.settings.appLanguage),
+        slot.slotNumber
+      )
       return
     }
 
@@ -173,14 +190,32 @@ final class AppModel: ObservableObject {
       }
 
       if emulatorErrorMessage == nil {
-        emulatorNoticeMessage = "Resumed slot \(slot.slotNumber) by restoring the saved boot target. Full memory-state resume will be connected when the native snapshot API is available."
+        emulatorNoticeMessage = String(
+          format: AppLocalizer.string(
+            "Resumed slot %d by restoring the saved boot target. Full memory-state resume will be connected when the native snapshot API is available.",
+            languageCode: settingsStore.settings.appLanguage
+          ),
+          slot.slotNumber
+        )
       }
     }
 
     if emulatorErrorMessage == nil && slot.nativeSnapshotName != nil {
-      emulatorNoticeMessage = "Resumed slot \(slot.slotNumber) and requested native snapshot restore when available."
+      emulatorNoticeMessage = String(
+        format: AppLocalizer.string(
+          "Resumed slot %d and requested native snapshot restore when available.",
+          languageCode: settingsStore.settings.appLanguage
+        ),
+        slot.slotNumber
+      )
     } else if emulatorErrorMessage == nil {
-      emulatorNoticeMessage = "Resumed slot \(slot.slotNumber) by restoring the saved boot target. Full memory-state resume will be connected when the native snapshot API is available."
+      emulatorNoticeMessage = String(
+        format: AppLocalizer.string(
+          "Resumed slot %d by restoring the saved boot target. Full memory-state resume will be connected when the native snapshot API is available.",
+          languageCode: settingsStore.settings.appLanguage
+        ),
+        slot.slotNumber
+      )
     }
   }
 

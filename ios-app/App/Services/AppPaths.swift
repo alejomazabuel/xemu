@@ -16,7 +16,7 @@ enum AppPaths {
   static func stagedAssetURL(for kind: SetupAssetKind) throws -> URL {
     guard let name = kind.stagingFilename else {
       throw NSError(domain: "X1Box.AppPaths", code: 1, userInfo: [
-        NSLocalizedDescriptionKey: "This asset kind does not stage to local storage."
+        NSLocalizedDescriptionKey: AppLocalizer.string("This asset kind does not stage to local storage.")
       ])
     }
     return try appSupportRoot().appendingPathComponent(name)

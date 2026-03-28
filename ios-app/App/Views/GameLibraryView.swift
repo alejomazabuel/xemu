@@ -65,8 +65,10 @@ struct GameLibraryView: View {
           .disabled(!model.canAttemptEmulationLaunch)
         }
 
-        Button(useGrid ? "List" : "Grid") {
+        Button {
           useGrid.toggle()
+        } label: {
+          Text(useGrid ? LocalizedStringKey("List") : LocalizedStringKey("Grid"))
         }
         .buttonStyle(.bordered)
         .tint(XboxTheme.accent)

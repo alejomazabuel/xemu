@@ -22,8 +22,8 @@ final class EmulatorSession: ObservableObject {
       (1...count).map { slotNumber in
         SnapshotSlot(
           slotNumber: slotNumber,
-          title: "Empty Slot",
-          detail: "No saved shell snapshot yet.",
+          title: AppLocalizer.string("Empty Slot"),
+          detail: AppLocalizer.string("No saved shell snapshot yet."),
           createdAt: nil,
           launchKind: nil,
           relativePath: nil,
@@ -123,20 +123,20 @@ final class EmulatorSession: ObservableObject {
   func saveSnapshot(to slotNumber: Int) throws {
     guard case .running = state else {
       throw NSError(domain: "X1Box.EmulatorSession", code: 20, userInfo: [
-        NSLocalizedDescriptionKey: "Start the console before saving a snapshot slot."
+        NSLocalizedDescriptionKey: AppLocalizer.string("Start the console before saving a snapshot slot.")
       ])
     }
 
     guard let target = currentLaunchTarget else {
       throw NSError(domain: "X1Box.EmulatorSession", code: 21, userInfo: [
-        NSLocalizedDescriptionKey: "There is no active launch target to save yet."
+        NSLocalizedDescriptionKey: AppLocalizer.string("There is no active launch target to save yet.")
       ])
     }
 
     var slots = normalizedSnapshotSlots(from: snapshotSlots)
     guard let slotIndex = slots.firstIndex(where: { $0.slotNumber == slotNumber }) else {
       throw NSError(domain: "X1Box.EmulatorSession", code: 22, userInfo: [
-        NSLocalizedDescriptionKey: "The selected snapshot slot does not exist."
+        NSLocalizedDescriptionKey: AppLocalizer.string("The selected snapshot slot does not exist.")
       ])
     }
 
@@ -148,13 +148,16 @@ final class EmulatorSession: ObservableObject {
 
     switch target {
     case .dashboard:
-      slot.title = "Dashboard"
-      slot.detail = "Boots the console shell again with the saved profile."
+      slot.title = AppLocalizer.string("Dashboard")
+      slot.detail = AppLocalizer.string("Boots the console shell again with the saved profile.")
       slot.launchKind = "dashboard"
       slot.relativePath = nil
     case .game(let title, let relativePath):
       slot.title = title
-      slot.detail = "Relaunches \(title) from the last saved shell slot."
+      slot.detail = String(
+        format: AppLocalizer.string("Relaunches %@ from the last saved shell slot."),
+        title as NSString
+      )
       slot.launchKind = "game"
       slot.relativePath = relativePath
     }
@@ -163,7 +166,7 @@ final class EmulatorSession: ObservableObject {
       do {
         try bridge.saveNativeSnapshotNamed(nativeSnapshotName)
         slot.nativeSnapshotName = nativeSnapshotName
-        slot.detail += " Native memory-state snapshot is available for this slot."
+        slot.detail += " " + AppLocalizer.string("Native memory-state snapshot is available for this slot.")
       } catch {
         throw error
       }
@@ -175,14 +178,17 @@ final class EmulatorSession: ObservableObject {
     snapshotSlots = slots
     try persistSnapshotSlots()
     snapshotActionError = nil
-    snapshotActionMessage = "Saved snapshot slot \(slotNumber). Full memory-state resume will plug into this slot when the native snapshot API is linked."
+    snapshotActionMessage = String(
+      format: AppLocalizer.string("Saved snapshot slot %d. Full memory-state resume will plug into this slot when the native snapshot API is linked."),
+      slotNumber
+    )
   }
 
   func deleteSnapshot(slotNumber: Int) throws {
     var slots = normalizedSnapshotSlots(from: snapshotSlots)
     guard let slotIndex = slots.firstIndex(where: { $0.slotNumber == slotNumber }) else {
       throw NSError(domain: "X1Box.EmulatorSession", code: 23, userInfo: [
-        NSLocalizedDescriptionKey: "The selected snapshot slot does not exist."
+        NSLocalizedDescriptionKey: AppLocalizer.string("The selected snapshot slot does not exist.")
       ])
     }
 
@@ -206,7 +212,10 @@ final class EmulatorSession: ObservableObject {
 
     try persistSnapshotSlots()
     snapshotActionError = nil
-    snapshotActionMessage = "Removed snapshot slot \(slotNumber)."
+    snapshotActionMessage = String(
+      format: AppLocalizer.string("Removed snapshot slot %d."),
+      slotNumber
+    )
   }
 
   private func prepareAndStart(
@@ -232,7 +241,7 @@ final class EmulatorSession: ObservableObject {
         currentLaunchTarget = launchTarget(for: game)
       } catch {
         let message = error.localizedDescription.isEmpty
-          ? "The native bridge could not start the session."
+          ? AppLocalizer.string("The native bridge could not start the session.")
           : error.localizedDescription
         state = .failed(message)
       }
@@ -245,7 +254,7 @@ final class EmulatorSession: ObservableObject {
     var normalized = settings
     if normalized.netEnable && normalized.netBackend == "bridge" {
       normalized.netBackend = "nat"
-      launchWarning = "Bridge networking is not available in the iOS shell yet. This session is using NAT instead."
+      launchWarning = AppLocalizer.string("Bridge networking is not available in the iOS shell yet. This session is using NAT instead.")
     }
     return normalized
   }
@@ -302,7 +311,10 @@ final class EmulatorSession: ObservableObject {
 
     do {
       try bridge.loadNativeSnapshotNamed(nativeSnapshotName)
-      snapshotActionMessage = "Loaded native snapshot for slot \(slot.slotNumber)."
+      snapshotActionMessage = String(
+        format: AppLocalizer.string("Loaded native snapshot for slot %d."),
+        slot.slotNumber
+      )
       snapshotActionError = nil
       return true
     } catch {

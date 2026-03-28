@@ -40,6 +40,9 @@
     A1200000000000000000001F /* XemuConfigWriterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1100000000000000000001E /* XemuConfigWriterTests.swift */; };
     A12000000000000000000020 /* SetupAssetStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11000000000000000000023 /* SetupAssetStoreTests.swift */; };
     A12000000000000000000021 /* NativeBridgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11000000000000000000024 /* NativeBridgeTests.swift */; };
+    A12000000000000000000022 /* X1_Covers.txt in Resources */ = {isa = PBXBuildFile; fileRef = A11000000000000000000025 /* X1_Covers.txt */; };
+    A12000000000000000000023 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A11000000000000000000026 /* Localizable.strings */; };
+    A12000000000000000000024 /* AppLocalizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11000000000000000000027 /* AppLocalizer.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -110,6 +113,9 @@
     A11000000000000000000022 /* X1BoxiOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = X1BoxiOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
     A11000000000000000000023 /* SetupAssetStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupAssetStoreTests.swift; sourceTree = "<group>"; };
     A11000000000000000000024 /* NativeBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeBridgeTests.swift; sourceTree = "<group>"; };
+    A11000000000000000000025 /* X1_Covers.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = ../android/app/src/main/assets/X1_Covers.txt; sourceTree = SOURCE_ROOT; };
+    A11000000000000000000026 /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = es.lproj/Localizable.strings; sourceTree = "<group>"; };
+    A11000000000000000000027 /* AppLocalizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLocalizer.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -208,6 +214,7 @@
     A10000000000000000000008 /* Utilities */ = {
       isa = PBXGroup;
       children = (
+        A11000000000000000000027 /* AppLocalizer.swift */,
         A1100000000000000000000E /* XboxTheme.swift */,
       );
       path = Utilities;
@@ -244,6 +251,8 @@
         A1100000000000000000001A /* Info.plist */,
         A1100000000000000000001B /* Assets.xcassets */,
         A1100000000000000000001F /* X1BoxiOS.entitlements */,
+        A11000000000000000000025 /* X1_Covers.txt */,
+        A11000000000000000000026 /* Localizable.strings */,
       );
       path = Support;
       sourceTree = "<group>";
@@ -358,6 +367,7 @@
       hasScannedForEncodings = 0;
       knownRegions = (
         en,
+        es,
         Base,
       );
       mainGroup = A10000000000000000000002;
@@ -378,6 +388,8 @@
       buildActionMask = 2147483647;
       files = (
         A12000000000000000000018 /* Assets.xcassets in Resources */,
+        A12000000000000000000022 /* X1_Covers.txt in Resources */,
+        A12000000000000000000023 /* Localizable.strings in Resources */,
       );
       runOnlyForDeploymentPostprocessing = 0;
     };
@@ -431,6 +443,7 @@
         A12000000000000000000014 /* SetupWizardView.swift in Sources */,
         A12000000000000000000015 /* TouchOverlayView.swift in Sources */,
         A12000000000000000000016 /* X1BoxiOSApp.swift in Sources */,
+        A12000000000000000000024 /* AppLocalizer.swift in Sources */,
       );
       runOnlyForDeploymentPostprocessing = 0;
     };

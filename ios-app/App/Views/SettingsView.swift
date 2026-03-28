@@ -9,7 +9,7 @@ struct SettingsView: View {
   @State private var draft: EmulatorSettings
   @State private var activeImportRequest: X1BoxImportRequest?
   @State private var assetErrorMessage: String?
-  @State private var embeddedCoreStatus: String = "Embedded core detection has not run yet."
+  @State private var embeddedCoreStatus: String = AppLocalizer.string("Embedded core detection has not run yet.")
   @State private var embeddedCorePath: String?
 
   init(store: SettingsStore, setupStore: SetupAssetStore, onDismiss: @escaping () -> Void) {
@@ -91,10 +91,14 @@ struct SettingsView: View {
           }
           Picker("Aspect Ratio", selection: $draft.displayMode) {
             ForEach(EmulatorDisplayMode.allCases) { mode in
-              Text(mode.title).tag(mode.rawValue)
+              Text(LocalizedStringKey(mode.title)).tag(mode.rawValue)
             }
           }
-          Stepper("Resolution Scale: \(draft.surfaceScale)x", value: $draft.surfaceScale, in: 1...3)
+          Stepper(
+            AppLocalizer.format("Resolution Scale: %dx", languageCode: draft.appLanguage, draft.surfaceScale),
+            value: $draft.surfaceScale,
+            in: 1...3
+          )
           Toggle("VSync", isOn: $draft.vsync)
         }
 
@@ -103,7 +107,12 @@ struct SettingsView: View {
             Text("Multi").tag("multi")
             Text("Single").tag("single")
           }
-          Stepper("Frame Limit: \(draft.frameRateLimit) FPS", value: $draft.frameRateLimit, in: 30...60, step: 30)
+          Stepper(
+            AppLocalizer.format("Frame Limit: %d FPS", languageCode: draft.appLanguage, draft.frameRateLimit),
+            value: $draft.frameRateLimit,
+            in: 30...60,
+            step: 30
+          )
           Picker("System Memory", selection: $draft.systemMemoryMiB) {
             Text("64 MiB").tag(64)
             Text("128 MiB").tag(128)
@@ -123,18 +132,20 @@ struct SettingsView: View {
         Section("Input Ports") {
           ForEach(Array(draft.inputPorts.indices), id: \.self) { index in
             VStack(alignment: .leading, spacing: 10) {
-              Text("Port \(index + 1)")
+              Text(
+                AppLocalizer.format("Port %d", languageCode: draft.appLanguage, index + 1)
+              )
                 .font(.headline)
 
               Picker("Driver", selection: $draft.inputPorts[index].driver) {
                 ForEach(InputDriverOption.allCases) { option in
-                  Text(option.title).tag(option.rawValue)
+                  Text(LocalizedStringKey(option.title)).tag(option.rawValue)
                 }
               }
 
               Picker("Binding", selection: $draft.inputPorts[index].bindingMode) {
                 ForEach(InputBindingMode.allCases) { option in
-                  Text(option.title).tag(option.rawValue)
+                  Text(LocalizedStringKey(option.title)).tag(option.rawValue)
                 }
               }
 
@@ -146,13 +157,13 @@ struct SettingsView: View {
 
               Picker("Expansion Slot A", selection: $draft.inputPorts[index].slotA) {
                 ForEach(InputExpansionOption.allCases) { option in
-                  Text(option.title).tag(option.rawValue)
+                  Text(LocalizedStringKey(option.title)).tag(option.rawValue)
                 }
               }
 
               Picker("Expansion Slot B", selection: $draft.inputPorts[index].slotB) {
                 ForEach(InputExpansionOption.allCases) { option in
-                  Text(option.title).tag(option.rawValue)
+                  Text(LocalizedStringKey(option.title)).tag(option.rawValue)
                 }
               }
             }
@@ -163,19 +174,35 @@ struct SettingsView: View {
         Section("Touch Overlay") {
           Toggle("Show on-screen controls", isOn: $draft.touchOverlay.showOverlay)
           VStack(alignment: .leading) {
-            Text("Opacity: \(Int(draft.touchOverlay.opacity * 100))%")
+            Text(
+              AppLocalizer.format("Opacity: %d%%", languageCode: draft.appLanguage, Int(draft.touchOverlay.opacity * 100))
+            )
             Slider(value: $draft.touchOverlay.opacity, in: 0.2...1.0)
           }
           VStack(alignment: .leading) {
-            Text("Scale: \(Int(draft.touchOverlay.scale * 100))%")
+            Text(
+              AppLocalizer.format("Scale: %d%%", languageCode: draft.appLanguage, Int(draft.touchOverlay.scale * 100))
+            )
             Slider(value: $draft.touchOverlay.scale, in: 0.75...1.35)
           }
           VStack(alignment: .leading) {
-            Text("Horizontal Position: \(Int(draft.touchOverlay.offsetX * 100))%")
+            Text(
+              AppLocalizer.format(
+                "Horizontal Position: %d%%",
+                languageCode: draft.appLanguage,
+                Int(draft.touchOverlay.offsetX * 100)
+              )
+            )
             Slider(value: $draft.touchOverlay.offsetX, in: -0.2...0.2)
           }
           VStack(alignment: .leading) {
-            Text("Vertical Position: \(Int(draft.touchOverlay.offsetY * 100))%")
+            Text(
+              AppLocalizer.format(
+                "Vertical Position: %d%%",
+                languageCode: draft.appLanguage,
+                Int(draft.touchOverlay.offsetY * 100)
+              )
+            )
             Slider(value: $draft.touchOverlay.offsetY, in: -0.2...0.2)
           }
         }
@@ -212,13 +239,13 @@ struct SettingsView: View {
         }
 
         Section("EEPROM") {
-          Text(setupStore.summary.record(for: .eeprom)?.displayName ?? "No EEPROM imported yet.")
+          Text(setupStore.summary.record(for: .eeprom)?.displayName ?? AppLocalizer.string("No EEPROM imported yet.", languageCode: draft.appLanguage))
             .font(.footnote)
             .foregroundStyle(XboxTheme.muted)
 
           Picker("Language", selection: $draft.eeprom.language) {
             ForEach(XboxEepromEditor.Language.allCases, id: \.rawValue) { language in
-              Text(language.rawValue.capitalized).tag(language.rawValue)
+              Text(LocalizedStringKey(language.rawValue.capitalized)).tag(language.rawValue)
             }
           }
           Picker("Video Standard", selection: $draft.eeprom.videoStandard) {
@@ -305,18 +332,28 @@ struct SettingsView: View {
 
   private var embeddedCoreSourceSummary: String {
     if let importedRecord = setupStore.summary.record(for: .embeddedCore) {
-      return "Imported embedded core override: \(importedRecord.displayName)"
+      return AppLocalizer.format(
+        "Imported embedded core override: %@",
+        languageCode: draft.appLanguage,
+        importedRecord.displayName as NSString
+      )
     }
 
     if let embeddedCorePath,
        !embeddedCorePath.isEmpty {
       if embeddedCorePath.contains(".app/") {
-        return "Bundled embedded core detected inside the installed IPA."
+        return AppLocalizer.string(
+          "Bundled embedded core detected inside the installed IPA.",
+          languageCode: draft.appLanguage
+        )
       }
-      return "Embedded core resolved at runtime."
+      return AppLocalizer.string("Embedded core resolved at runtime.", languageCode: draft.appLanguage)
     }
 
-    return "No imported override in app storage. The app will use the bundled embedded core when it is available."
+    return AppLocalizer.string(
+      "No imported override in app storage. The app will use the bundled embedded core when it is available.",
+      languageCode: draft.appLanguage
+    )
   }
 
   private func refreshEmbeddedCoreStatus() {

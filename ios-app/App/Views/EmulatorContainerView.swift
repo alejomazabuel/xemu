@@ -26,8 +26,10 @@ struct EmulatorContainerView: View {
 
           Menu("Snapshots") {
             ForEach(model.emulatorSession.snapshotSlots) { slot in
-              Button("Save to Slot \(slot.slotNumber)") {
+              Button {
                 model.saveSnapshot(to: slot.slotNumber)
+              } label: {
+                Text("Save to Slot \(slot.slotNumber)")
               }
             }
           }

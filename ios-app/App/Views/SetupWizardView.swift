@@ -22,13 +22,19 @@ struct SetupWizardView: View {
 
           ForEach(orderedKinds) { kind in
             VStack(alignment: .leading, spacing: 10) {
-              Text(kind.displayName)
+              Text(LocalizedStringKey(kind.displayName))
                 .font(.headline)
                 .foregroundStyle(XboxTheme.text)
 
-              Text(statusText(for: kind))
-                .font(.subheadline)
-                .foregroundStyle(XboxTheme.muted)
+              if let record = model.setupStore.summary.record(for: kind) {
+                Text(record.displayName)
+                  .font(.subheadline)
+                  .foregroundStyle(XboxTheme.muted)
+              } else {
+                Text(kind.isRequired ? "Required" : "Optional")
+                  .font(.subheadline)
+                  .foregroundStyle(XboxTheme.muted)
+              }
 
               Button(kind.allowsFolderSelection ? "Choose Folder" : "Import File") {
                 activeImportRequest = X1BoxImportRequest(kind: kind)
@@ -64,13 +70,6 @@ struct SetupWizardView: View {
         handleImport(result, for: request.kind)
       }
     }
-  }
-
-  private func statusText(for kind: SetupAssetKind) -> String {
-    if let record = model.setupStore.summary.record(for: kind) {
-      return record.displayName
-    }
-    return kind.isRequired ? "Required" : "Optional"
   }
 
   private func handleImport(_ result: Result<[URL], Error>, for kind: SetupAssetKind) {
