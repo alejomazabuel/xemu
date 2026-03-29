@@ -29,6 +29,7 @@ using EmbeddedPumpFrameFn = void (*)(void);
 using EmbeddedRequestShutdownFn = void (*)(void);
 using EmbeddedIsActiveFn = bool (*)(void);
 using EmbeddedGetLastErrorFn = const char *(*)(void);
+using SDLSetMainReadyFn = void (*)(void);
 using QemuInitFn = void (*)(int, char **);
 using QemuMainFn = int (*)(void);
 using XemuSettingsSetPathFn = void (*)(const char *);
@@ -161,6 +162,11 @@ static EmbeddedIsActiveFn EmbeddedIsActiveSymbol(void)
 static EmbeddedGetLastErrorFn EmbeddedGetLastErrorSymbol(void)
 {
   return ResolveOptionalSymbol<EmbeddedGetLastErrorFn>("xemu_embedded_get_last_error");
+}
+
+static SDLSetMainReadyFn SDLSetMainReadySymbol(void)
+{
+  return ResolveOptionalSymbol<SDLSetMainReadyFn>("SDL_SetMainReady");
 }
 
 static QemuInitFn QemuInitSymbol(void)
@@ -675,6 +681,11 @@ static NSString *SummaryFromState(const SessionRuntimeState &state)
                                userInfo:@{NSLocalizedDescriptionKey: @"The embedded xemu core was already initialized in this process. Relaunch the app to boot it again."}];
     }
     return NO;
+  }
+
+  SDLSetMainReadyFn sdlSetMainReady = SDLSetMainReadySymbol();
+  if (sdlSetMainReady != nullptr) {
+    sdlSetMainReady();
   }
 
   _state.running = true;

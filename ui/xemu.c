@@ -969,6 +969,14 @@ static bool sdl2_display_very_early_init_internal(DisplayOptions *o,
                         (audio_hint && audio_hint[0]) ? audio_hint : "(unset)");
 #endif
 
+    /*
+     * Embedded iOS/Android entry points load xemu as a library instead of
+     * going through SDL's usual SDL_main bootstrap. Mark the app as ready
+     * before touching SDL_Init so UIKit-backed launches don't fail with
+     * "Application didn't initialize properly".
+     */
+    SDL_SetMainReady();
+
     if (SDL_Init(SDL_INIT_VIDEO)) {
         xemu_embedded_set_error("Failed to initialize SDL video subsystem: %s",
                                 SDL_GetError());
